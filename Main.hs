@@ -69,7 +69,7 @@ mainmenu True con = do
     unless (con `keyPressed` Key'Q) $ consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
 
 runGame :: Console -> Game -> IO ()
-runGame = evalStateT . townmap True
+runGame = evalStateT . characterCreation True
 
 main :: IO ()
 main = withConsole 80 60 "Necromancer Simulator 2014" (mainmenu True)
