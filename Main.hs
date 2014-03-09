@@ -46,10 +46,21 @@ characterCreation = characterCreation' ""
                 clearConsole
                 drawString ("Enter your name: " ++ name) (3, 5)
 
-            case con `keyPressed` Key'Enter of
-                True  -> consoleLoop con worldmap
-                False -> let new = map keyToChar . filter (\k -> k `elem` Key'A `enumFromTo` Key'Z) $ (pressedKeys con)
-                         in consoleLoop con (characterCreation' $ name ++ new)
+            case pressedKeys con of
+                (k:_) -> handleInput k
+                _     -> consoleLoop con (characterCreation' name)
+
+            where
+                handleInput k
+                    | k == Key'Enter     = consoleLoop con worldmap
+                    | k == Key'Backspace = consoleLoop con (characterCreation' $ eraseLastElem name)
+                    | k `elem` Key'A `enumFromTo` Key'Z = consoleLoop con (characterCreation' $ name ++ [keyToChar k])
+                    | otherwise          = consoleLoop con (characterCreation' name)
+
+        eraseLastElem :: [a] -> [a]
+        eraseLastElem [] = []
+        eraseLastElem (x:y:[]) = [x]
+        eraseLastElem (x:xs) = x : eraseLastElem xs
 
         pressedKeys :: Console -> [Key]
         pressedKeys con = filter (\k -> con `keyPressed` k) (S.elems $ input con)
