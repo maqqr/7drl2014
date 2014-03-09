@@ -1,6 +1,9 @@
 module Console where
 
+import Data.IORef
 import Data.Char
+import Data.Set (Set)
+import qualified Data.Set as S
 import Control.Monad
 import Control.Exception (finally)
 import Control.Concurrent (threadDelay)
@@ -16,7 +19,12 @@ charWidth = 8.0
 charHeight :: GLfloat
 charHeight = 8.0
 
-type Console = GLFW.Window
+data Console = Console {
+    consoleWindow :: GLFW.Window,
+    inputRef      :: IORef (Set GLFW.Key),
+    input         :: Set GLFW.Key,
+    oldInput      :: Set GLFW.Key
+}
 
 -- | Loads texture and sets filtering and wrapping modes
 loadTexture :: FilePath -> IO GL.TextureObject
@@ -66,16 +74,39 @@ drawString (c:hars) (x, y) = drawChar (ord c) (x, y) >> drawString hars (x+1, y)
 clearConsole :: IO ()
 clearConsole = GL.clear [GL.ColorBuffer, GL.DepthBuffer] >> GL.loadIdentity
 
--- | Flushes the console updates to the screen
-flushConsole :: Console -> IO ()
+-- | Flushes the console updates to the screen and updates keyboard input
+flushConsole :: Console -> IO Console
 flushConsole con = do
-    GLFW.swapBuffers con
+    GLFW.swapBuffers (consoleWindow con)
     GL.flush
     GLFW.pollEvents
+    newKeys <- readIORef (inputRef con)
     threadDelay 20000 -- small delay to prevent 100% processor usage
+    return con { input = newKeys, oldInput = input con }
 
-consoleShouldClose :: Console -> IO Bool
-consoleShouldClose = GLFW.windowShouldClose
+-- | Returns false if the user closed the window
+consoleIsRunning :: Console -> IO Bool
+consoleIsRunning = fmap not . GLFW.windowShouldClose . consoleWindow
+
+keyboardCallback :: IORef (Set GLFW.Key) -> GLFW.Window -> GLFW.Key -> Int -> GLFW.KeyState -> GLFW.ModifierKeys -> IO ()
+keyboardCallback keyref _ key _ GLFW.KeyState'Pressed _ = do
+    keys <- readIORef keyref
+    writeIORef keyref $ S.insert key keys
+
+keyboardCallback keyref _ key _ GLFW.KeyState'Released _ = do
+    keys <- readIORef keyref
+    writeIORef keyref $ S.delete key keys
+
+keyboardCallback _ _ _ _ _ _ = return ()
+
+keyPressed :: Console -> GLFW.Key -> Bool
+keyPressed (Console _ _ keys oldkeys) key = key `S.member` keys && not (key `S.member` oldkeys)
+
+keyReleased :: Console -> GLFW.Key -> Bool
+keyReleased (Console _ _ keys oldkeys) key = not (key `S.member` keys) && key `S.member` oldkeys
+
+keyDown :: Console -> GLFW.Key -> Bool
+keyDown (Console _ _ keys _) key = key `S.member` keys
 
 withConsole :: GLint -> GLint -> String -> (Console -> IO ()) -> IO ()
 withConsole width height title action =
@@ -92,7 +123,9 @@ withConsole width height title action =
         GL.activeTexture $= GL.TextureUnit 0
         GL.textureBinding GL.Texture2D $= Just tex
 
-        action win
+        keyRef <- newIORef S.empty
+        GLFW.setKeyCallback win $ Just (keyboardCallback keyRef)
+        action (Console win keyRef S.empty S.empty)
     where
         windowWidth :: GLint
         windowWidth = width * truncate charWidth
@@ -101,9 +134,7 @@ withConsole width height title action =
         windowHeight = height * truncate charHeight
 
         resizeCallback :: GLFW.Window -> Int -> Int -> IO ()
-        resizeCallback _ w h = do
-            putStrLn $ "resize" ++ show (w, h)
-            GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral w) (fromIntegral h))
+        resizeCallback _ w h = GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral w) (fromIntegral h))
 
 
 -- | Creates a window using GLFW and executes an action
@@ -122,11 +153,11 @@ withWindow width height title action = do
         case maybeWindow of
             Just window -> do
                 GLFW.makeContextCurrent $ Just window
-                GLFW.setCursorInputMode window GLFW.CursorInputMode'Hidden
+                --GLFW.setCursorInputMode window GLFW.CursorInputMode'Hidden
                 GLFW.swapInterval 1
                 finally (action window) $ do
                     GLFW.destroyWindow window
                     GLFW.terminate
-            Nothing     -> return ()
+            Nothing -> return ()
     where
         simpleErrorCallback e s = putStrLn $ unwords [show e, show s]
