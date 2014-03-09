@@ -65,7 +65,7 @@ mainmenu True con = do
     drawString "Necromancer Simulator 2014" (10, 3)
     drawString "(S)tart New Game" (5, 8)
     drawString "(Q)uit Game" (5, 10)
-    when (con `keyPressed` Key'S) $ newGame >>= runGame con
+    when (con `keyPressed` Key'S) $ newGame "" >>= runGame con
     unless (con `keyPressed` Key'Q) $ consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
 
 runGame :: Console -> Game -> IO ()
