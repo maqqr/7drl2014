@@ -11,7 +11,7 @@ import Console
 type GameState a = StateT Game IO a
 
 mainloop :: Bool -> Console -> GameState ()
-mainloop False _ = return ()
+mainloop False _  = return ()
 mainloop True con = do
     lift $ do
         clearConsole
@@ -25,8 +25,8 @@ mainloop True con = do
 
 
 mainmenu :: Bool -> Console -> IO ()
-mainmenu False _ = return ()
-mainmenu True con  = do
+mainmenu False _  = return ()
+mainmenu True con = do
     clearConsole
     drawString "Necromancer Simulator 2014" (10, 3)
     case con `keyPressed` GLFW.Key'A of
