@@ -58,8 +58,8 @@ characterCreation = characterCreation' ""
                     | otherwise          = consoleLoop con (characterCreation' name)
 
         eraseLastElem :: [a] -> [a]
-        eraseLastElem [] = []
-        eraseLastElem (x:y:[]) = [x]
+        eraseLastElem []     = []
+        eraseLastElem (_:[]) = []
         eraseLastElem (x:xs) = x : eraseLastElem xs
 
         pressedKeys :: Console -> [Key]
