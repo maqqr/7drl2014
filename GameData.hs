@@ -3,6 +3,8 @@ module GameData where
 
 import qualified Data.Map as M
 import Data.Map ((\\),Map)
+import System.Random
+import Data.Maybe
 
 data Tile = Floor
           | Road
@@ -47,6 +49,7 @@ data Player = Player {
     place         :: Point,
     points        :: Int,
     hp            :: Int,
+    maxHp         :: Int,
     spells        :: [Spell]
 }   deriving (Eq, Show)
 
@@ -69,7 +72,6 @@ data Zombi  = Zombi
 type MinionMap = Map Point [Zombi]
 
 data Corpse = Corpse {
-    lkm         :: Int,
     npcType     :: Npc
 }   deriving (Eq, Show)
 
@@ -104,11 +106,28 @@ riseUndead old@Game {..} = old {corpseMap = corpseMap \\ nearCorpses,
             distance (x,y) (xs,ys) = (x - xs)^2 + (y - ys)^2
 
             convertToUndead :: Corpse -> Zombi
-            convertToUndead (Corpse _ Guard) = GuardZombi
-            convertToUndead (Corpse _ King ) = KingZombi
-            convertToUndead (Corpse _ _    ) = Zombi
+            convertToUndead (Corpse Guard) = GuardZombi
+            convertToUndead (Corpse King ) = KingZombi
+            convertToUndead (Corpse _    ) = Zombi
 
             nearCorpses = M.filterWithKey (\xy _ -> distance xy (place player) <= 5^2) corpseMap
+
+drainLife :: Game -> Point -> IO Game
+drainLife old@Game {..} xy = do
+    luku <- randomRIO (0::Int, 101::Int)
+    if luku < 50
+        then return $ old {corpseMap = M.alter (convertToCorpse target) xy corpseMap}
+
+        else return old
+
+    where   target = M.lookup xy npcMap
+
+            convertToCorpse :: Maybe Npc -> Maybe [Corpse] -> Maybe [Corpse]
+            convertToCorpse Nothing Nothing = Nothing
+            convertToCorpse Nothing oldies = oldies
+            convertToCorpse (Just npc) Nothing = Just [Corpse npc]
+            convertToCorpse (Just npc) (Just oldies) = Just (Corpse npc:oldies)
+
 
 stringToWorldTileMap :: [String] -> WorldTileMap
 stringToWorldTileMap mapdata = M.fromList $ map checkPlan [(x, y) | x <- [0..width], y <- [0..height]]
@@ -129,7 +148,7 @@ stringToWorldTileMap mapdata = M.fromList $ map checkPlan [(x, y) | x <- [0..wid
         charToTile '#' = TowerTile
 
 newGame :: String -> IO Game
-newGame name = return $ Game  (Player name (0,0) 0 100 [])
+newGame name = return $ Game  (Player name (0,0) 0 100 100 [])
                               (Tower 0 0 0 0 0 0)
                             (M.fromList  []) --worldTileMap
                             (M.fromList  []) --worldVillageMap
