@@ -108,8 +108,8 @@ keyReleased (Console _ _ keys oldkeys) key = not (key `S.member` keys) && key `S
 keyDown :: Console -> GLFW.Key -> Bool
 keyDown (Console _ _ keys _) key = key `S.member` keys
 
-clearInput :: Console -> Console
-clearInput (Console win ref _ _) = Console win ref S.empty S.empty
+advanceInput :: Console -> Console
+advanceInput (Console win ref keys _) = Console win ref keys keys
 
 withConsole :: GLint -> GLint -> String -> (Console -> IO ()) -> IO ()
 withConsole width height title action =
