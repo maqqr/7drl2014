@@ -48,8 +48,8 @@ characterCreation = characterCreation' ""
 
             case con `keyPressed` Key'Enter of
                 True  -> consoleLoop con worldmap
-                False -> let writtenCharacters = map keyToChar (pressedKeys con)
-                         in consoleLoop con (characterCreation' $ name ++ writtenCharacters)
+                False -> let new = map keyToChar . filter (\k -> k `elem` Key'A `enumFromTo` Key'Z) $ (pressedKeys con)
+                         in consoleLoop con (characterCreation' $ name ++ new)
 
         pressedKeys :: Console -> [Key]
         pressedKeys con = filter (\k -> con `keyPressed` k) (S.elems $ input con)
