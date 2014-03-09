@@ -1,0 +1,3 @@
+cabal build
+dist\build\NecromancerSimulator\NecromancerSimulator
+pause

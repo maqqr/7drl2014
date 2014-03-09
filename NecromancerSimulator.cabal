@@ -60,7 +60,7 @@ executable NecromancerSimulator
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.6 && <4.7, OpenGL >=2.9 && <2.10, GLFW-b >=1.4 && <1.5, GLUtil >=0.7 && <0.8
+  build-depends:       base >=4.6 && <4.7, OpenGL >=2.9 && <2.10, GLUT >=2.5.1.0, GLFW-b >=1.4 && <1.5, GLUtil >=0.7 && <0.8
   
   -- Directories containing source files.
   -- hs-source-dirs:      

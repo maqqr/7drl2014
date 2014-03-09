@@ -1,12 +1,11 @@
 module Main where
 
 import Data.Char
-import Console
+import ConsoleGLUT
 
 
-mainloop :: Console -> Bool -> IO ()
-mainloop _ False = return ()
-mainloop con True = do
+display :: IO ()
+display = do
     clearConsole
 
     mapM_ (\c -> drawChar (ord '@') (c, 5)) [1..30]
@@ -14,9 +13,11 @@ mainloop con True = do
     drawString "Hello World!" (2, 2)
     drawString "Testing" (5, 3)
 
-    flushConsole con
-    mainloop con . not =<< consoleShouldClose con
+    flushConsole Console
+
+--mainloop con . not =<< consoleShouldClose con
 
 
 main :: IO ()
-main = withConsole 80 60 "Necromancer Simulator 2014" $ \con -> mainloop con True
+main = runConsole 80 50 "Necromancer Simulator 2014" $ display
+
