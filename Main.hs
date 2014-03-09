@@ -35,7 +35,6 @@ worldmap True con = do
     consoleLoop con worldmap
 
 
-
 characterCreation :: ConsoleLoop
 characterCreation = characterCreation' ""
     where
@@ -52,7 +51,7 @@ characterCreation = characterCreation' ""
 
             where
                 handleInput k
-                    | k == Key'Enter     = consoleLoop con worldmap
+                    | k == Key'Enter     = consoleLoop (clearInput con) worldmap
                     | k == Key'Backspace = consoleLoop con (characterCreation' $ eraseLastElem name)
                     | k `elem` Key'A `enumFromTo` Key'Z = consoleLoop con (characterCreation' $ name ++ [keyToChar k])
                     | otherwise          = consoleLoop con (characterCreation' name)
@@ -76,7 +75,7 @@ mainmenu True con = do
     drawString "Necromancer Simulator 2014" (10, 3)
     drawString "(S)tart New Game" (5, 8)
     drawString "(Q)uit Game" (5, 10)
-    when (con `keyPressed` Key'S) $ newGame "" >>= runGame con
+    when (con `keyPressed` Key'S) $ newGame "" >>= runGame (clearInput con)
     unless (con `keyPressed` Key'Q) $ consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
 
 runGame :: Console -> Game -> IO ()
