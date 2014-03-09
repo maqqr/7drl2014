@@ -2,6 +2,7 @@ module Console where
 
 import Data.Char
 import Control.Monad
+import Control.Exception (finally)
 import Control.Concurrent (threadDelay)
 import Control.Applicative
 import Graphics.Rendering.OpenGL (($=), GLfloat, GLint)
@@ -10,10 +11,10 @@ import qualified Graphics.UI.GLFW as GLFW
 import qualified Graphics.GLUtil as GLU
 
 charWidth :: GLfloat
-charWidth = 16.0
+charWidth = 8.0
 
 charHeight :: GLfloat
-charHeight = 16.0
+charHeight = 8.0
 
 type Console = GLFW.Window
 
@@ -21,35 +22,10 @@ type Console = GLFW.Window
 loadTexture :: FilePath -> IO GL.TextureObject
 loadTexture texturePath = do
     tex <- either error id <$> GLU.readTexture texturePath
-    GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Linear')
+    GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Nearest)
     GLU.texture2DWrap $= (GL.Mirrored, GL.ClampToEdge)
     return tex
 
-
--- | Creates a window using GLFW and executes an action
-withWindow :: Int     -- ^ Width
-           -> Int     -- ^ Height
-           -> String  -- ^ Window caption
-           -> (GLFW.Window -> IO ())
-           -> IO ()
-withWindow width height title action = do
-    GLFW.setErrorCallback $ Just simpleErrorCallback
-    success <- GLFW.init
-    when success $ do
-        GLFW.windowHint $ GLFW.WindowHint'RefreshRate 60
-        GLFW.windowHint $ GLFW.WindowHint'Resizable False
-        maybeWindow <- GLFW.createWindow width height title Nothing Nothing
-        case maybeWindow of
-            Just window -> do
-                GLFW.makeContextCurrent $ Just window
-                GLFW.setCursorInputMode window GLFW.CursorInputMode'Hidden
-                GLFW.swapInterval 1
-                action window
-                GLFW.setErrorCallback $ Just simpleErrorCallback
-                GLFW.destroyWindow window
-            Nothing     -> return ()
-    where
-        simpleErrorCallback e s = putStrLn $ unwords [show e, show s]
 
 -- | Draws a single character
 drawChar :: Int         -- ^ ASCII code of the character
@@ -98,20 +74,20 @@ flushConsole con = do
     GLFW.pollEvents
     threadDelay 20000 -- small delay to prevent 100% processor usage
 
-
 consoleShouldClose :: Console -> IO Bool
 consoleShouldClose = GLFW.windowShouldClose
 
 withConsole :: GLint -> GLint -> String -> (Console -> IO ()) -> IO ()
 withConsole width height title action =
     withWindow (fromIntegral windowWidth) (fromIntegral windowHeight) title $ \win -> do
+        GLFW.setWindowSizeCallback win (Just resizeCallback)
         GL.viewport $= (GL.Position 0 0, GL.Size windowWidth windowHeight)
         GL.matrixMode $= GL.Projection
         GL.loadIdentity
         GL.ortho2D 0.0 (fromIntegral windowWidth) (fromIntegral windowHeight) 0.0
         GL.matrixMode $= GL.Modelview 0
 
-        tex <- loadTexture "terminal16x16.png"
+        tex <- loadTexture "terminal8x8.png"
         GL.texture GL.Texture2D $= GL.Enabled
         GL.activeTexture $= GL.TextureUnit 0
         GL.textureBinding GL.Texture2D $= Just tex
@@ -123,3 +99,34 @@ withConsole width height title action =
 
         windowHeight :: GLint
         windowHeight = height * truncate charHeight
+
+        resizeCallback :: GLFW.Window -> Int -> Int -> IO ()
+        resizeCallback _ w h = do
+            putStrLn $ "resize" ++ show (w, h)
+            GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral w) (fromIntegral h))
+
+
+-- | Creates a window using GLFW and executes an action
+withWindow :: Int     -- ^ Width
+           -> Int     -- ^ Height
+           -> String  -- ^ Window caption
+           -> (GLFW.Window -> IO ())
+           -> IO ()
+withWindow width height title action = do
+    GLFW.setErrorCallback $ Just simpleErrorCallback
+    success <- GLFW.init
+    when success $ do
+        GLFW.windowHint $ GLFW.WindowHint'RefreshRate 60
+        GLFW.windowHint $ GLFW.WindowHint'Resizable True
+        maybeWindow <- GLFW.createWindow width height title Nothing Nothing
+        case maybeWindow of
+            Just window -> do
+                GLFW.makeContextCurrent $ Just window
+                GLFW.setCursorInputMode window GLFW.CursorInputMode'Hidden
+                GLFW.swapInterval 1
+                finally (action window) $ do
+                    GLFW.destroyWindow window
+                    GLFW.terminate
+            Nothing     -> return ()
+    where
+        simpleErrorCallback e s = putStrLn $ unwords [show e, show s]
