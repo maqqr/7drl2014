@@ -150,9 +150,9 @@ stringToWorldTileMap mapdata = M.fromList $ map checkPlan [(x, y) | x <- [0..wid
 newGame :: String -> IO Game
 newGame name = return $ Game  (Player name (0,0) 0 100 100 [])
                               (Tower 0 0 0 0 0 0)
-                            (M.fromList  []) --worldTileMap
-                            (M.fromList  []) --worldVillageMap
-                            (M.fromList  [])
-                            (M.fromList  [])
-                            (M.fromList  [])
-                            (M.fromList  [])
+                              (M.fromList  []) --worldTileMap
+                              (M.fromList  []) --worldVillageMap
+                              (M.fromList  [])
+                              (M.fromList  [])
+                              (M.fromList  [])
+                              (M.fromList  [])
