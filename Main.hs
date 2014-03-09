@@ -3,7 +3,7 @@ module Main where
 import Data.Char
 import Control.Monad
 import Control.Monad.State
-import qualified Graphics.UI.GLFW as GLFW
+import Graphics.UI.GLFW (Key(..))
 
 import GameData
 import Console
@@ -29,7 +29,7 @@ mainmenu False _  = return ()
 mainmenu True con = do
     clearConsole
     drawString "Necromancer Simulator 2014" (10, 3)
-    case con `keyPressed` GLFW.Key'A of
+    case con `keyPressed` Key'A of
         True  -> newGame >>= runGame con
         False -> consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
 
