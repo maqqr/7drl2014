@@ -36,12 +36,11 @@ type WorldTileMap = Map Point WorldMapTile
 
 type WorldVillageMap = Map Point Village
 
-data Spell = Spell {
-    spellName    :: String,
-    dmg          :: Int,
-    range        :: Int,
-    doc          :: String --kuvaus
-}   deriving (Eq, Show)
+data Spell = RiseUndead 
+           | ForceBolt
+           | Fireball
+           | DrainLife
+           deriving (Eq, Show)
 
 data Player = Player {
     playerName    :: String,
@@ -110,6 +109,24 @@ riseUndead old@Game {..} = old {corpseMap = corpseMap \\ nearCorpses,
             convertToUndead (Corpse _ _    ) = Zombi
 
             nearCorpses = M.filterWithKey (\xy _ -> distance xy (place player) <= 5^2) corpseMap
+
+stringToWorldTileMap :: [String] -> WorldTileMap
+stringToWorldTileMap mapdata = M.fromList $ map checkPlan [(x, y) | x <- [0..width], y <- [0..height]]
+    where
+        width = length (head mapdata) - 1
+        height = (length mapdata) - 1
+
+        checkPlan :: Point -> (Point, WorldMapTile)
+        checkPlan p@(x, y) = (p, charToTile $ mapdata !! y !! x)
+
+        charToTile :: Char -> WorldMapTile
+        charToTile '&' = Forest
+        charToTile '"' = Plains
+        charToTile '^' = Mountain
+        charToTile '_' = Lake
+        charToTile '~' = River
+        charToTile '/' = WorldRoad
+        charToTile '#' = TowerTile
 
 newGame :: String -> IO Game
 newGame name = return $ Game  (Player name (0,0) 0 100 [])
