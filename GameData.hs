@@ -88,13 +88,16 @@ data Npc = Guard
          | King
          | MaleUnarmed | FemaleUnarmed | Male | Female
          | Child
-         deriving (Eq, Show)
+         deriving (Eq)
 
 instance Show Npc where
     show MaleUnarmed   = "unarmed male"
     show FemaleUnarmed = "unarmed female"
     show Male          = "male"
     show Female        = "female"
+    show Guard         = "guard"
+    show Child         = "child"
+    show King          = "King"
 
 type NpcMap = Map Point Npc
 
@@ -191,8 +194,8 @@ forceBolt old@Game {..} xy = do
 fireball :: Game -> Point -> IO Game
 fireball old@Game {..} xy = do
     effectRadius <- randomRIO (1::Int, 6::Int) --Muuta, että säteeseen vaikuttaa jokin tornin attribuutti
-    addCastMsg $ old {
-        corpseMap = foldr (\xy m -> M.alter xy m) corpseMap (aoe xy effectRadius),
+    return . addCastMsg $ old {
+        corpseMap = foldr (\xy m -> M.alter (convertNpcToCorpse (M.lookup xy npcMap)) xy m) corpseMap (aoe xy effectRadius),
         npcMap    = foldr (\xy m -> M.delete xy m) npcMap (aoe xy effectRadius)
     }
 
