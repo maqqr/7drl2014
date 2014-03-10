@@ -84,11 +84,17 @@ data Corpse = Corpse {
 
 type CorpseMap = Map Point [Corpse]
 
-data Npc = Guard 
-         | King 
+data Npc = Guard
+         | King
          | MaleUnarmed | FemaleUnarmed | Male | Female
          | Child
          deriving (Eq, Show)
+
+instance Show Npc where
+    show MaleUnarmed   = "unarmed male"
+    show FemaleUnarmed = "unarmed female"
+    show Male          = "male"
+    show Female        = "female"
 
 type NpcMap = Map Point Npc
 
@@ -115,6 +121,10 @@ addMsg str game
         maxBufferSize = 5
 
 --Funktiot--
+
+aoe :: Point -> Int -> [Point]
+aoe (x',y') r = [(x'+x, y'+y) | x <- [-r..r], y <- [-r..r], x^2+y^2<=r^2] 
+
 convertNpcToCorpse :: Maybe Npc -> Maybe [Corpse] -> Maybe [Corpse]
 convertNpcToCorpse Nothing Nothing = Nothing
 convertNpcToCorpse Nothing oldies = oldies
@@ -174,9 +184,21 @@ forceBolt old@Game {..} xy = do
         addCastMsg :: Game -> Game
         addCastMsg game = case target of
             Nothing  -> addMsg "There is no valid target to strike." game
-            Just npc -> addMsg ("The missile strikes the" ++ show npc ++ ".") game
+            Just npc -> addMsg ("The missile strikes the " ++ show npc ++ ".") game
 
         target = M.lookup xy npcMap
+
+fireball :: Game -> Point -> IO Game
+fireball old@Game {..} xy = do
+    effectRadius <- randomRIO (1::Int, 6::Int) --Muuta, että säteeseen vaikuttaa jokin tornin attribuutti
+    addCastMsg $ old {
+        corpseMap = foldr (\xy m -> M.alter xy m) corpseMap (aoe xy effectRadius),
+        npcMap    = foldr (\xy m -> M.delete xy m) npcMap (aoe xy effectRadius)
+    }
+
+    where
+        addCastMsg :: Game -> Game
+        addCastMsg game = addMsg "You cast small ball of fire that explodes devouring everything inside blast radius." game
 
 stringToWorldTileMap :: [String] -> WorldTileMap
 stringToWorldTileMap []      = M.fromList []
