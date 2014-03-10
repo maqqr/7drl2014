@@ -11,4 +11,8 @@ The development ends on 16.3.2014 at 12:00 UTC+2.
 
 ### Day 1
 
-Coming soon.
+The basic framework for the game is done and the required datatypes are designed and implemented. There isn't much to show right now so we won't add any screenshots for this day. Tomorrow we'll try to get map drawing and player movement done.
+
+### Day 2
+
+Coming soon (:tm:).
