@@ -15,4 +15,12 @@ The basic framework for the game is done and the required datatypes are designed
 
 ### Day 2
 
+![Day 2](/screenshots/day2.png "Screenshot of day 2")
+
+World map drawing and drain life, force bolt and fireball spells are done. Player movement will (hopefully) come tomorrow. The characters on the console window can have two colors. For example the trees on the world map blend from green to dark green.
+
+The dark bottom area of the window will be filled with information about your own necromancer tower, which you can upgrade to make yourself and your zombies stronger.
+
+### Day 3
+
 Coming soon (:tm:).
