@@ -19,6 +19,34 @@ charWidth = 8.0
 charHeight :: GLfloat
 charHeight = 8.0
 
+type Color = (GLfloat, GLfloat, GLfloat)
+
+white = (1.0 :: GLfloat, 1.0 :: GLfloat, 1.0 :: GLfloat)
+red = (1.0 :: GLfloat, 0.0 :: GLfloat, 0.0 :: GLfloat)
+green = (0.0, 1.0, 0.0 :: GLfloat)
+blue = (0.0, 0.0, 1.0 :: GLfloat)
+
+dark :: Color -> Color
+dark (r, g, b) = (r * c, g * c, b * c)
+    where
+        c = 0.5
+
+light :: Color -> Color
+light (r, g, b) = clampColor (r * c + 0.1, g * c + 0.1, b * c + 0.1)
+    where
+        c = 1.5
+
+clampColor :: Color -> Color
+clampColor (r, g, b) = (clamp r, clamp g, clamp b)
+    where
+        min' = 0.0
+        max' = 1.0
+        clamp x
+            | x > max'  = max'
+            | x < min'  = min'
+            | otherwise = x
+
+
 data Console = Console {
     consoleWindow :: GLFW.Window,
     inputRef      :: IORef (Set GLFW.Key),
@@ -35,15 +63,25 @@ loadTexture texturePath = do
     return tex
 
 
--- | Draws a single character
-drawChar :: Int         -- ^ ASCII code of the character
-         -> (Int, Int)  -- ^ Position on the console
-         -> IO ()
-drawChar charCode (x', y') = GL.renderPrimitive GL.Quads . vertexInfo $ quad
+type CharacterRenderer = Int -> (Int, Int) -> IO ()
+
+whiteChar :: CharacterRenderer
+whiteChar = colorChar (1.0, 1.0, 1.0)
+
+colorChar :: Color -> CharacterRenderer
+colorChar col = colorChar2 col col
+
+-- | Draws a single character with two colors
+colorChar2 :: Color       -- ^ Top color
+           -> Color       -- ^ Bottom color
+           -> Int         -- ^ ASCII code of the character
+           -> (Int, Int)  -- ^ Position on the console
+           -> IO ()
+colorChar2 (r,g,b) (r2,g2,b2) charCode (x', y') = GL.renderPrimitive GL.Quads . vertexInfo $ quad
     where
-        vertexInfo :: [(GLfloat,GLfloat,GLfloat,GLfloat)] -> IO ()
-        vertexInfo = mapM_ (\(xx,yy,u,v) -> do
-            GL.color (GL.Color3 1.0 0.0 (0.0 :: GLfloat))
+        vertexInfo :: [(GLfloat,GLfloat,GLfloat,GLfloat,GLfloat,GLfloat,GLfloat)] -> IO ()
+        vertexInfo = mapM_ (\(xx,yy,u,v,r',g',b') -> do
+            GL.color (GL.Color3 r' g' b')
             GL.texCoord (GL.TexCoord2 u v)
             GL.vertex (GL.Vertex3 xx yy 0.0))
 
@@ -55,19 +93,20 @@ drawChar charCode (x', y') = GL.renderPrimitive GL.Quads . vertexInfo $ quad
         texX = fromIntegral (charCode `mod` 16) * charWidth
         texY = fromIntegral (charCode `quot` 16) * charHeight
 
-        quad :: [(GLfloat,GLfloat,GLfloat,GLfloat)]
-        quad = [(x,    y,    texX / texmapW,      texY / texmapH),
-                (x+cw, y,    (texX+cw) / texmapW, texY / texmapH),
-                (x+cw, y+ch, (texX+cw) / texmapW, (texY+ch) / texmapH),
-                (x,    y+ch, texX / texmapW,      (texY+ch) / texmapH)]
+        quad :: [(GLfloat,GLfloat,GLfloat,GLfloat,GLfloat,GLfloat,GLfloat)]
+        quad = [(x,    y,    texX / texmapW,      texY / texmapH,      r,  g,  b),
+                (x+cw, y,    (texX+cw) / texmapW, texY / texmapH,      r,  g,  b),
+                (x+cw, y+ch, (texX+cw) / texmapW, (texY+ch) / texmapH, r2, g2, b2),
+                (x,    y+ch, texX / texmapW,      (texY+ch) / texmapH, r2, g2, b2)]
 
 
 -- | Draws a string on the console
-drawString :: String      -- ^ String to draw
-           -> (Int, Int)  -- ^ Position on the console
+drawString :: CharacterRenderer -- ^ Character drawing function
+           -> String            -- ^ String to draw
+           -> (Int, Int)        -- ^ Position on the console
            -> IO ()
-drawString [] _ = return ()
-drawString (c:hars) (x, y) = drawChar (ord c) (x, y) >> drawString hars (x+1, y)
+drawString _ [] _ = return ()
+drawString df (c:hars) (x, y) = df (ord c) (x, y) >> drawString df hars (x+1, y)
 
 
 -- | Clears the console
