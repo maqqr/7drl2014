@@ -5,6 +5,13 @@ import qualified Data.Map as M
 import Data.Map ((\\),Map)
 import System.Random
 import Data.Maybe
+import Debug.Trace
+
+ptrace :: Show a => a -> a
+ptrace a = trace (show a) a
+
+ptrace' :: Show a => String -> a -> a
+ptrace' s a = trace ("\n" ++ s ++ ";" ++ show a) a
 
 data Tile = Floor
           | Road
@@ -94,42 +101,70 @@ data Game = Game {
     minionMap       :: MinionMap,
     npcMap          :: NpcMap,
     tileMap         :: TileMap,
-    corpseMap       :: CorpseMap
+    corpseMap       :: CorpseMap,
+
+    messageBuffer   :: [String]
 }   deriving (Eq, Show)
+
+addMsg :: String -> Game -> Game
+addMsg str game
+    | length buf >= maxBufferSize = game { messageBuffer = str : take (maxBufferSize-1) buf }
+    | otherwise                   = game { messageBuffer = str : buf }
+    where
+        buf = messageBuffer game
+        maxBufferSize = 5
 
 --Funktiot--
 
-riseUndead :: Game -> Game
-riseUndead old@Game {..} = old {corpseMap = corpseMap \\ nearCorpses,
-                                minionMap = M.union minionMap $ M.map (\corpses -> map convertToUndead corpses) nearCorpses}
-    where   distance :: Point -> Point -> Int
-            distance (x,y) (xs,ys) = (x - xs)^2 + (y - ys)^2
+raiseUndead :: Game -> Game
+raiseUndead old@Game {..} = addCastMsg $ old {
+        corpseMap = corpseMap \\ nearCorpses,
+        minionMap = M.union minionMap $ M.map (\corpses -> map convertToUndead corpses) nearCorpses
+    }
+    where
+        addCastMsg :: Game -> Game
+        addCastMsg game = addMsg "You cast raise undead." game
 
-            convertToUndead :: Corpse -> Zombi
-            convertToUndead (Corpse Guard) = GuardZombi
-            convertToUndead (Corpse King ) = KingZombi
-            convertToUndead (Corpse _    ) = Zombi
+        distance :: Point -> Point -> Int
+        distance (x,y) (xs,ys) = (x - xs)^2 + (y - ys)^2
 
-            nearCorpses = M.filterWithKey (\xy _ -> distance xy (place player) <= 5^2) corpseMap
+        convertToUndead :: Corpse -> Zombi
+        convertToUndead (Corpse Guard) = GuardZombi
+        convertToUndead (Corpse King ) = KingZombi
+        convertToUndead (Corpse _    ) = Zombi
+
+        nearCorpses = M.filterWithKey (\xy _ -> distance xy (place player) <= 5^2) corpseMap
+
 
 drainLife :: Game -> Point -> IO Game
 drainLife old@Game {..} xy = do
-    luku <- randomRIO (0::Int, 101::Int)
+    luku <- randomRIO (1::Int, 100::Int)
     if luku < 50
-        then return $ old {corpseMap = M.alter (convertToCorpse target) xy corpseMap}
+        then return . addCastMsg $ old {
+            corpseMap = M.alter (convertNpcToCorpse target) xy corpseMap,
+            npcMap    = M.delete xy npcMap,
+            player    = player { hp = (hp player) + 1 }
+        }
+        else return $ addMsg "You failed to cast drain life." old
 
-        else return old
+    where
+        addCastMsg :: Game -> Game
+        addCastMsg game = case target of
+            Nothing    -> addMsg "There is no one to drain life from." game
+            Just (npc) -> addMsg ("You drain life from the " ++ show npc ++ ".") game
 
-    where   target = M.lookup xy npcMap
+        target = M.lookup xy npcMap
 
-            convertToCorpse :: Maybe Npc -> Maybe [Corpse] -> Maybe [Corpse]
-            convertToCorpse Nothing Nothing = Nothing
-            convertToCorpse Nothing oldies = oldies
-            convertToCorpse (Just npc) Nothing = Just [Corpse npc]
-            convertToCorpse (Just npc) (Just oldies) = Just (Corpse npc:oldies)
+        convertNpcToCorpse :: Maybe Npc -> Maybe [Corpse] -> Maybe [Corpse]
+        --convertNpcToCorpse mn mcl | trace ("convert" ++ show (mn, mcl)) False = undefined
+        convertNpcToCorpse Nothing Nothing = Nothing
+        convertNpcToCorpse Nothing oldies = oldies
+        convertNpcToCorpse (Just npc) Nothing = Just [Corpse npc]
+        convertNpcToCorpse (Just npc) (Just oldies) = Just (Corpse npc:oldies)
 
 
 stringToWorldTileMap :: [String] -> WorldTileMap
+stringToWorldTileMap []      = M.fromList []
 stringToWorldTileMap mapdata = M.fromList $ map checkPlan [(x, y) | x <- [0..width], y <- [0..height]]
     where
         width = length (head mapdata) - 1
@@ -150,9 +185,24 @@ stringToWorldTileMap mapdata = M.fromList $ map checkPlan [(x, y) | x <- [0..wid
 newGame :: String -> IO Game
 newGame name = return $ Game  (Player name (0,0) 0 100 100 [])
                               (Tower 0 0 0 0 0 0)
-                              (M.fromList  []) --worldTileMap
-                              (M.fromList  []) --worldVillageMap
-                              (M.fromList  [])
-                              (M.fromList  [])
-                              (M.fromList  [])
-                              (M.fromList  [])
+                              (M.fromList []) --worldTileMap
+                              (M.fromList []) --worldVillageMap
+                              (M.fromList [])
+                              (M.fromList [])
+                              (M.fromList [])
+                              (M.fromList [])
+                              []
+
+
+-- Testing
+
+testGame :: Game
+testGame = Game (Player "" (0,0) 0 100 100 [])
+                (Tower 0 0 0 0 0 0)
+                (M.fromList []) --worldTileMap
+                (M.fromList []) --worldVillageMap
+                (M.fromList []) -- minion
+                (M.fromList [((1,1), Male)]) -- npc
+                (M.fromList []) -- corpse
+                (M.fromList []) -- tile
+                []
