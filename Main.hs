@@ -11,15 +11,6 @@ import GameData
 import Console
 import Color
 
-
-worldmapTileToChar :: WorldMapTile -> (Int, Color, Color)
-worldmapTileToChar Plains   = (ord '"', (0.4, 0.7, 0.4), (0.9, 0.9, 0.1))
-worldmapTileToChar Mountain = (ord '^', (0.9, 0.9, 0.9), (0.1, 0.1, 0.1))
-worldmapTileToChar Forest   = (5      , (0.1, 0.7, 0.1), (0.1, 0.1, 0.1))
-worldmapTileToChar Lake     = (ord '=', (0.0, 0.0, 0.3), (0.3, 0.3, 0.9))
-worldmapTileToChar River    = (ord '~', (0.3, 0.3, 0.5), (0.6, 0.6, 1.0))
-worldmapTileToChar _        = (ord '?', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-
 type GameState a = StateT Game IO a
 
 type ConsoleLoop = Bool -> Console -> GameState ()
@@ -30,11 +21,27 @@ consoleLoop con f = lift (consoleIsRunning con) >>= \run -> lift (flushConsole c
 townmap :: ConsoleLoop
 townmap False _  = return ()
 townmap True con = do
+    tmap <- fmap tileMap get
     lift $ do
         clearConsole
-        drawString whiteChar "Townmap" (0, 0)
+        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] tmap
 
     consoleLoop con townmap
+    where
+        tileToChar :: Tile -> (Int, Color, Color)
+        tileToChar Floor     = (ord '.', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        tileToChar Road      = (ord '.', (0.5, 0.3, 0.1), (0.5, 0.3, 0.1))
+        tileToChar WallWood  = (ord '#', (0.5, 0.3, 0.1), (0.5, 0.3, 0.1))
+        tileToChar WallStone = (ord '#', (0.7, 0.7, 0.7), (0.7, 0.7, 0.7))
+        tileToChar Tree      = (5      , (0.1, 0.7, 0.1), (0.1, 0.1, 0.1))
+        tileToChar Water     = (ord '=', (0.0, 0.0, 0.3), (0.3, 0.3, 0.9))
+        tileToChar DoorClose = (ord '+', (0.6, 0.3, 0.1), (0.6, 0.3, 0.1))
+        tileToChar DoorOpen  = (ord '/', (0.6, 0.3, 0.1), (0.6, 0.3, 0.1))
+        tileToChar Gate      = (ord '0', (0.4, 0.2, 0.1), (0.4, 0.2, 0.1))
+
+        drawTile :: Point -> Tile -> IO ()
+        drawTile xy t = let (ascii, col, col2) = tileToChar t
+                        in colorChar2 col col2 ascii xy
 
 
 worldmap :: ConsoleLoop
@@ -44,9 +51,18 @@ worldmap True con = do
     lift $ do
         clearConsole
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] wmap
+        -- todo: draw villages from worldVillageMap
 
     consoleLoop con worldmap
     where
+        worldmapTileToChar :: WorldMapTile -> (Int, Color, Color)
+        worldmapTileToChar Plains   = (ord '"', (0.4, 0.7, 0.4), (0.9, 0.9, 0.1))
+        worldmapTileToChar Mountain = (ord '^', (0.9, 0.9, 0.9), (0.1, 0.1, 0.1))
+        worldmapTileToChar Forest   = (5      , (0.1, 0.7, 0.1), (0.1, 0.1, 0.1))
+        worldmapTileToChar Lake     = (ord '=', (0.0, 0.0, 0.3), (0.3, 0.3, 0.9))
+        worldmapTileToChar River    = (ord '~', (0.3, 0.3, 0.5), (0.6, 0.6, 1.0))
+        worldmapTileToChar _        = (ord '?', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
         drawTile :: Point -> WorldMapTile -> IO ()
         drawTile xy t = let (ascii, col, col2) = worldmapTileToChar t
                         in colorChar2 col col2 ascii xy
