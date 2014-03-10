@@ -9,6 +9,7 @@ import Graphics.UI.GLFW (Key(..))
 
 import GameData
 import Console
+import Color
 
 
 worldmapTileToChar :: WorldMapTile -> (Int, Color, Color)

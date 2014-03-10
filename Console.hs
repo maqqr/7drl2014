@@ -13,38 +13,13 @@ import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
 import qualified Graphics.GLUtil as GLU
 
+import Color
+
 charWidth :: GLfloat
 charWidth = 8.0
 
 charHeight :: GLfloat
 charHeight = 8.0
-
-type Color = (GLfloat, GLfloat, GLfloat)
-
-white = (1.0 :: GLfloat, 1.0 :: GLfloat, 1.0 :: GLfloat)
-red = (1.0 :: GLfloat, 0.0 :: GLfloat, 0.0 :: GLfloat)
-green = (0.0, 1.0, 0.0 :: GLfloat)
-blue = (0.0, 0.0, 1.0 :: GLfloat)
-
-dark :: Color -> Color
-dark (r, g, b) = (r * c, g * c, b * c)
-    where
-        c = 0.5
-
-light :: Color -> Color
-light (r, g, b) = clampColor (r * c + 0.1, g * c + 0.1, b * c + 0.1)
-    where
-        c = 1.5
-
-clampColor :: Color -> Color
-clampColor (r, g, b) = (clamp r, clamp g, clamp b)
-    where
-        min' = 0.0
-        max' = 1.0
-        clamp x
-            | x > max'  = max'
-            | x < min'  = min'
-            | otherwise = x
 
 
 data Console = Console {
@@ -150,6 +125,7 @@ keyDown (Console _ _ keys _) key = key `S.member` keys
 advanceInput :: Console -> Console
 advanceInput (Console win ref keys _) = Console win ref keys keys
 
+-- | Creates a "console" window and executes an action
 withConsole :: GLint -> GLint -> String -> (Console -> IO ()) -> IO ()
 withConsole width height title action =
     withWindow (fromIntegral windowWidth) (fromIntegral windowHeight) title $ \win -> do
