@@ -115,6 +115,11 @@ addMsg str game
         maxBufferSize = 5
 
 --Funktiot--
+convertNpcToCorpse :: Maybe Npc -> Maybe [Corpse] -> Maybe [Corpse]
+convertNpcToCorpse Nothing Nothing = Nothing
+convertNpcToCorpse Nothing oldies = oldies
+convertNpcToCorpse (Just npc) Nothing = Just [Corpse npc]
+convertNpcToCorpse (Just npc) (Just oldies) = Just (Corpse npc:oldies)
 
 raiseUndead :: Game -> Game
 raiseUndead old@Game {..} = addCastMsg $ old {
@@ -155,13 +160,23 @@ drainLife old@Game {..} xy = do
 
         target = M.lookup xy npcMap
 
-        convertNpcToCorpse :: Maybe Npc -> Maybe [Corpse] -> Maybe [Corpse]
-        --convertNpcToCorpse mn mcl | trace ("convert" ++ show (mn, mcl)) False = undefined
-        convertNpcToCorpse Nothing Nothing = Nothing
-        convertNpcToCorpse Nothing oldies = oldies
-        convertNpcToCorpse (Just npc) Nothing = Just [Corpse npc]
-        convertNpcToCorpse (Just npc) (Just oldies) = Just (Corpse npc:oldies)
+forceBolt :: Game -> Point -> IO Game
+forceBolt old@Game {..} xy = do
+    luku <- randomRIO (1::Int, 100::Int)
+    if luku < (spellsUp tower)
+        then return . addCastMsg $ old {
+            corpseMap = M.alter (convertNpcToCorpse target) xy corpseMap,
+            npcMap    = M.delete xy npcMap
+        }
+    else return $ addMsg "You create magical missile, but it fades into the air." old
 
+    where
+        addCastMsg :: Game -> Game
+        addCastMsg game = case target of
+            Nothing  -> addMsg "There is no valid target to strike." game
+            Just npc -> addMsg ("The missile strikes the" ++ show npc ++ ".") game
+
+        target = M.lookup xy npcMap
 
 stringToWorldTileMap :: [String] -> WorldTileMap
 stringToWorldTileMap []      = M.fromList []
