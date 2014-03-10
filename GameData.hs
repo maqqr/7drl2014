@@ -243,7 +243,7 @@ worldmapTiles = stringToWorldTileMap [
 
 newGame :: IO Game
 newGame = return $ Game (Player "" (0,0) 0 100 100 [])
-                        (Tower 0 0 0 0 0 0)
+                        (Tower 0 0 0 0 0 60)
                         worldmapTiles
                         (M.fromList []) --worldVillageMap
                         (M.fromList [])
@@ -256,7 +256,7 @@ newGame = return $ Game (Player "" (0,0) 0 100 100 [])
 
 testGame :: Game
 testGame = Game (Player "" (0,0) 0 100 100 [])
-                (Tower 0 0 0 0 0 0)
+                (Tower 0 0 0 0 0 60)
                 (M.fromList []) --worldTileMap
                 (M.fromList []) --worldVillageMap
                 (M.fromList []) -- minion
