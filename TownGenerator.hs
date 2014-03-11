@@ -129,8 +129,8 @@ randomVillageMap (sx, sy, w, h) = do
 
         planHouse :: Rect -> IO (Rect, Rect)
         planHouse rect@(x',y',w',h') = do
-            rw <- randomRIO (minHouseSize, w' - 2)
-            rh <- randomRIO (minHouseSize, h' - 2)
+            rw <- randomRIO (minHouseSize, w' - 4)
+            rh <- randomRIO (minHouseSize, h' - 4)
             rx <- randomRIO (x'+1, x' + (w' - rw - 2))
             ry <- randomRIO (y'+1, y' + (h' - rh - 2))
             let generatedRoom = (rx, ry, rw, rh)
