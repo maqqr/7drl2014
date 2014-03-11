@@ -102,21 +102,16 @@ genBsp initialRect = splitter
         fix 0 f x = f x
         fix n f x = f =<< fix (n-1) f x
 
-        goodRoom (x, y, w, h) = w >= minRoom && h >= minRoom
-
+        goodRoom (_, _, w, h) = w >= minRoom && h >= minRoom
         minRoom = 10
 
 
-data Hole = Hole
-hole :: Hole
-hole = undefined
-
+-- | Generates random village map
 randomVillageMap :: Rect -> IO TileMap
 randomVillageMap (sx, sy, w, h) = do
     bsp <- genBsp (sx, sy, w-1, h-1)
     let emptyMap = M.fromList [((x, y), Grass) | x <- [sx..w-1], y <- [sy..h-1]]
     bspWithHouses <- generateHouses bsp
-    print bspWithHouses
     return . buildHouses emptyMap . ptrace . F.foldr ((:) . snd) [] $ bspWithHouses
     where
         minHouseSize = 5
@@ -125,7 +120,7 @@ randomVillageMap (sx, sy, w, h) = do
         buildHouses = foldr buildHouse
 
         buildHouse :: Rect -> TileMap -> TileMap
-        buildHouse r@(x',y',w',h') = (flip . foldr . uncurry $ M.insert) houseTiles
+        buildHouse (x',y',w',h') = (flip . foldr . uncurry $ M.insert) houseTiles
             where
                 houseTiles = [((x, y), Floor) | x <- [x'..x'+w'], y <- [y'..y'+h']]
 
@@ -136,20 +131,9 @@ randomVillageMap (sx, sy, w, h) = do
         planHouse rect@(x',y',w',h') = do
             rw <- randomRIO (minHouseSize, w' - 2)
             rh <- randomRIO (minHouseSize, h' - 2)
-            rx <- randomRIO (x', x' + (w' - rw))
-            ry <- randomRIO (y', y' + (h' - rh))
-            --rw <- fmap (clamp . (+)minRoomSize) $ randomRIO (0, w' - minRoomSize)
-            --rh <- fmap (clamp . (+)minRoomSize) $ randomRIO (0, h' - minRoomSize)
-            --rx <- fmap (+x') $ randomRIO (0, w' - rw)
-            --ry <- fmap (+y') $ randomRIO (0, h' - rh)
+            rx <- randomRIO (x'+1, x' + (w' - rw - 2))
+            ry <- randomRIO (y'+1, y' + (h' - rh - 2))
             let generatedRoom = (rx, ry, rw, rh)
-            print generatedRoom
+            --print generatedRoom
             --return (rect, (x'+1, y'+1, w'-2, h'-2))
             return (rect, generatedRoom)
-
-        min' = 5
-        max' = 12
-        clamp x
-            | x > max'  = max'
-            | x < min'  = min'
-            | otherwise = x
