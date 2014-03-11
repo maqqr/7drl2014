@@ -27,7 +27,7 @@ type Point = (Int, Int)
 
 type TileMap = Map Point Tile
 
-data Village = Village {
+data Village = Castle | Village {
     villageName     :: String,
     size            :: Int,
     playerStatus    :: Bool
@@ -270,7 +270,9 @@ newGame :: IO Game
 newGame = return $ Game (Player "" (0,0) 0 100 100 [])
                         (Tower 0 0 0 0 0 60)
                         worldmapTiles
-                        (M.fromList []) --worldVillageMap
+                        (M.fromList [((20, 20), Village "Test village" 10 False),
+                                     ((23, 35), Village "Another village" 15 False),
+                                     ((60, 25), Castle)]) --worldVillageMap
                         (M.fromList [])
                         (M.fromList [])
                         (M.fromList [])
