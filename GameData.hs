@@ -25,6 +25,9 @@ data Tile = Floor
 
 type Point = (Int, Int)
 
+(^+^) :: Point -> Point -> Point
+(x, y) ^+^ (x', y') = (x + x', y + y')
+
 type TileMap = Map Point Tile
 
 data Village = Castle | Village {
@@ -102,17 +105,18 @@ instance Show Npc where
 type NpcMap = Map Point Npc
 
 data Game = Game {
-    player          :: Player,
-    tower           :: Tower,
-    worldTileMap    :: WorldTileMap,
-    worldVillageMap :: WorldVillageMap,
+    player           :: Player,
+    tower            :: Tower,
+    worldTileMap     :: WorldTileMap,
+    worldVillageMap  :: WorldVillageMap,
+    worldmapPosition :: Point,
 
-    minionMap       :: MinionMap,
-    npcMap          :: NpcMap,
-    tileMap         :: TileMap,
-    corpseMap       :: CorpseMap,
+    minionMap        :: MinionMap,
+    npcMap           :: NpcMap,
+    tileMap          :: TileMap,
+    corpseMap        :: CorpseMap,
 
-    messageBuffer   :: [String]
+    messageBuffer    :: [String]
 }   deriving (Eq, Show)
 
 addMsg :: String -> Game -> Game
@@ -273,6 +277,7 @@ newGame = return $ Game (Player "" (0,0) 0 100 100 [])
                         (M.fromList [((20, 20), Village "Test village" 10 False),
                                      ((33, 30), Village "Another village" 15 False),
                                      ((60, 25), Castle)]) --worldVillageMap
+                        (10, 10)
                         (M.fromList [])
                         (M.fromList [])
                         (M.fromList [])
@@ -286,6 +291,7 @@ testGame = Game (Player "" (0,0) 0 100 100 [])
                 (Tower 0 0 0 0 0 60)
                 (M.fromList []) --worldTileMap
                 (M.fromList []) --worldVillageMap
+                (0, 0)
                 (M.fromList []) -- minion
                 (M.fromList [((1,1), Male)]) -- npc
                 (M.fromList []) -- corpse

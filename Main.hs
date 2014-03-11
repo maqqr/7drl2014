@@ -1,6 +1,7 @@
 module Main where
 
 import Data.Char
+import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Map as M
 import Control.Monad
@@ -52,8 +53,18 @@ worldmap True con = do
     gstate <- get
     lift $ do
         clearConsole
+
+        -- Draw map and villages
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy (worldmapTileToChar tile):iolist) [] (worldTileMap gstate)
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy (villageToChar tile):iolist) [] (worldVillageMap gstate)
+
+        -- Draw player
+        colorChar (0.8, 0.3, 0.5) (ord '@') (worldmapPosition gstate)
+
+    when (con `keyPressed` Key'A) $ movePlayer (-1,  0)
+    when (con `keyPressed` Key'D) $ movePlayer ( 1,  0)
+    when (con `keyPressed` Key'W) $ movePlayer ( 0, -1)
+    when (con `keyPressed` Key'S) $ movePlayer ( 0,  1)
 
     consoleLoop con worldmap
     where
@@ -74,6 +85,21 @@ worldmap True con = do
         drawTile :: Point -> CharInfo -> IO ()
         drawTile xy t = let (ascii, col, col2) = t
                         in colorChar2 col col2 ascii xy
+
+        blocked :: Game -> Point -> Bool
+        blocked game xy = fromMaybe True . fmap solidTile $ M.lookup xy (worldTileMap game)
+            where
+                solidTile Mountain = True
+                solidTile Lake     = True
+                solidTile _        = False
+
+        movePlayer :: Point -> GameState ()
+        movePlayer delta = get >>= movePlayer'
+            where
+                movePlayer' gstate = when (not $ blocked gstate newPos) $ modify (\g -> g { worldmapPosition = newPos })
+                    where
+                        oldxy  = worldmapPosition gstate
+                        newPos = oldxy ^+^ delta
 
 
 characterCreation :: ConsoleLoop
