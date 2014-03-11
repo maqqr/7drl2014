@@ -102,10 +102,9 @@ genBsp initialRect = splitter
         fix 0 f x = f x
         fix n f x = f =<< fix (n-1) f x
 
-        goodRoom (x, y, w, h) = w >= minRoom && h >= maxRoom --w >= minRoom && w >= maxRoom && h >= minRoom && h <= maxRoom
+        goodRoom (x, y, w, h) = w >= minRoom && h >= minRoom
 
-        minRoom = 8
-        maxRoom = 16
+        minRoom = 10
 
 
 data Hole = Hole
@@ -120,7 +119,7 @@ randomVillageMap (sx, sy, w, h) = do
     print bspWithHouses
     return . buildHouses emptyMap . ptrace . F.foldr ((:) . snd) [] $ bspWithHouses
     where
-        minRoomSize = 5
+        minHouseSize = 5
 
         buildHouses :: TileMap -> [Rect] -> TileMap
         buildHouses = foldr buildHouse
@@ -135,13 +134,18 @@ randomVillageMap (sx, sy, w, h) = do
 
         planHouse :: Rect -> IO (Rect, Rect)
         planHouse rect@(x',y',w',h') = do
-            rw <- fmap (clamp . (+)minRoomSize) $ randomRIO (0, w' - minRoomSize)
-            rh <- fmap (clamp . (+)minRoomSize) $ randomRIO (0, h' - minRoomSize)
-            rx <- fmap (+x') $ randomRIO (0, w' - rw)
-            ry <- fmap (+y') $ randomRIO (0, h' - rh)
+            rw <- randomRIO (minHouseSize, w' - 2)
+            rh <- randomRIO (minHouseSize, h' - 2)
+            rx <- randomRIO (x', x' + (w' - rw))
+            ry <- randomRIO (y', y' + (h' - rh))
+            --rw <- fmap (clamp . (+)minRoomSize) $ randomRIO (0, w' - minRoomSize)
+            --rh <- fmap (clamp . (+)minRoomSize) $ randomRIO (0, h' - minRoomSize)
+            --rx <- fmap (+x') $ randomRIO (0, w' - rw)
+            --ry <- fmap (+y') $ randomRIO (0, h' - rh)
             let generatedRoom = (rx, ry, rw, rh)
             print generatedRoom
-            return (rect, (x'+1, y'+1, w'-2, h'-2)) -- $ . ptrace $ (rect, generatedRoom)
+            --return (rect, (x'+1, y'+1, w'-2, h'-2))
+            return (rect, generatedRoom)
 
         min' = 5
         max' = 12
