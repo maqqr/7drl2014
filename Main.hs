@@ -125,7 +125,8 @@ characterCreation = characterCreation' ""
         characterCreation' name True con = do
             lift $ do
                 clearConsole
-                drawString whiteChar ("Enter your name: " ++ name) (3, 5)
+                drawString whiteChar ("Enter your name:") (30, 5)
+                drawString (colorChar2 (light red) (0.4, 0.3, 0.3)) name (30, 7)
 
             case pressedKeys con of
                 (k:_) -> handleInput k
@@ -154,9 +155,9 @@ mainmenu :: Bool -> Console -> IO ()
 mainmenu False _  = return ()
 mainmenu True con = do
     clearConsole
-    titleString "Necromancer Simulator 2014" (10, 3)
-    titleString "(S)tart New Game" (5, 8)
-    titleString "(Q)uit Game" (5, 10)
+    titleString "Necromancer Simulator 2014" (25, 7)
+    titleString "(S)tart New Game" (30, 12)
+    titleString "(Q)uit Game" (30, 14)
     when (con `keyPressed` Key'S) $ newGame >>= runGame (advanceInput con)
     unless (con `keyPressed` Key'Q) $ consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
     where
