@@ -210,6 +210,28 @@ fireball old@Game {..} xy = do
         addCastMsg :: Game -> Game
         addCastMsg game = addMsg "You cast small ball of fire that explodes devouring everything inside blast radius." game
 
+zombiAttack :: Game -> Zombi -> Point -> IO Game
+zombiAttack old@Game {..} z xy = do
+    luku <- randomRIO(((zombieStr tower) + (hit z))::Int, 100::Int)
+    if luku > 50
+        then return .  addDeathMsg $ old {
+            corpseMap = M.alter (convertNpcToCorpse target) xy corpseMap,
+            npcMap    = M.delete xy npcMap
+        }
+    else return old
+
+    where
+        target = M.lookup xy npcMap
+
+        hit :: Zombi -> Int
+        hit GuardZombi = 10
+        hit EliteZombi = 20
+        hit KingZombi = 30
+        hit _ = 0
+
+        addDeathMsg :: Game -> Game
+        addDeathMsg game = addMsg ("The " ++ show z ++ " killed the " ++ show target) game
+
 createVillage :: IO TileMap
 createVillage = undefined
 
