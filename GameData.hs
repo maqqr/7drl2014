@@ -119,6 +119,10 @@ data Game = Game {
     messageBuffer    :: [String]
 }   deriving (Eq, Show)
 
+
+--Funktiot--
+
+
 addMsg :: String -> Game -> Game
 addMsg str game
     | length buf >= maxBufferSize = game { messageBuffer = str : take (maxBufferSize-1) buf }
@@ -126,8 +130,6 @@ addMsg str game
     where
         buf = messageBuffer game
         maxBufferSize = 5
-
---Funktiot--
 
 aoe :: Point -> Int -> [Point]
 aoe (x',y') r = [(x'+x, y'+y) | x <- [-r..r], y <- [-r..r], x^2+y^2<=r^2] 
@@ -206,6 +208,21 @@ fireball old@Game {..} xy = do
     where
         addCastMsg :: Game -> Game
         addCastMsg game = addMsg "You cast small ball of fire that explodes devouring everything inside blast radius." game
+
+createVillage :: IO TileMap
+createVillage = undefined
+
+    where
+        createRoadPoints :: Bool -> Int -> Point -> Point -> IO [Point]
+        createRoadPoints False _ _ _ = return []
+        createRoadPoints True 9 (xs, ys) (x, y) = do
+            xc <- randomRIO(-1::Int, 1::Int)
+            yc <- randomRIO(-1::Int, 1::Int)
+            road <- createRoadPoints ((x + xs) < 40 && (y + ys) < 80) 0 (xs + xc, ys + yc) (x + xs, y + ys)
+            return $ (x, y) : road
+        createRoadPoints True a (xs, ys) (x, y) = do
+            road <- createRoadPoints ((x + xs) < 40 && (y + ys) < 80) (a+1) (xs, ys) (x + xs, y + ys)
+            return $ (x, y) : road
 
 stringToWorldTileMap :: [String] -> WorldTileMap
 stringToWorldTileMap []      = M.fromList []
