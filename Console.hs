@@ -122,6 +122,15 @@ keyReleased (Console _ _ keys oldkeys) key = not (key `S.member` keys) && key `S
 keyDown :: Console -> GLFW.Key -> Bool
 keyDown (Console _ _ keys _) key = key `S.member` keys
 
+keysPressed :: Console -> [GLFW.Key] -> Bool
+keysPressed con = any (con `keyPressed`)
+
+anyKeysDown :: Console -> [GLFW.Key] -> Bool
+anyKeysDown con = any (con `keyDown`)
+
+allKeysDown :: Console -> [GLFW.Key] -> Bool
+allKeysDown con = all (con `keyDown`)
+
 advanceInput :: Console -> Console
 advanceInput (Console win ref keys _) = Console win ref keys keys
 

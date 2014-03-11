@@ -61,13 +61,18 @@ worldmap True con = do
         -- Draw player
         colorChar (0.8, 0.3, 0.5) (ord '@') (worldmapPosition gstate)
 
-    when (con `keyPressed` Key'A) $ movePlayer (-1,  0)
-    when (con `keyPressed` Key'D) $ movePlayer ( 1,  0)
-    when (con `keyPressed` Key'W) $ movePlayer ( 0, -1)
-    when (con `keyPressed` Key'S) $ movePlayer ( 0,  1)
+    -- Move player
+    mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
+
 
     consoleLoop con worldmap
     where
+        moveKeys :: [([Key], Point)]
+        moveKeys = [([Key'H, Key'Pad4], (-1, 0)), ([Key'L, Key'Pad6], (1, 0)),
+                    ([Key'K, Key'Pad8], (0, -1)), ([Key'J, Key'Pad2], (0, 1)),
+                    ([Key'Y, Key'Pad7], (-1,-1)), ([Key'U, Key'Pad9], (1,-1)),
+                    ([Key'B, Key'Pad1], (-1, 1)), ([Key'N, Key'Pad3], (1, 1))]
+
         villageToChar :: Village -> CharInfo
         villageToChar (Village _ _ False) = (ord 'o', (0.7, 0.4, 0.2), (0.3, 0.1, 0.0))
         villageToChar (Village _ _ True)  = (ord 'o', (0.9, 0.1, 0.1), (0.2, 0.1, 0.0))
