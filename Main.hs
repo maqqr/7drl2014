@@ -15,20 +15,22 @@ type GameState a = StateT Game IO a
 
 type ConsoleLoop = Bool -> Console -> GameState ()
 
+type CharInfo = (Int, Color, Color)
+
 consoleLoop :: Console -> ConsoleLoop -> GameState ()
 consoleLoop con f = lift (consoleIsRunning con) >>= \run -> lift (flushConsole con) >>= f run
 
 townmap :: ConsoleLoop
 townmap False _  = return ()
 townmap True con = do
-    tmap <- fmap tileMap get
+    gstate <- get
     lift $ do
         clearConsole
-        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] tmap
+        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] (tileMap gstate)
 
     consoleLoop con townmap
     where
-        tileToChar :: Tile -> (Int, Color, Color)
+        tileToChar :: Tile -> CharInfo
         tileToChar Floor     = (ord '.', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         tileToChar Road      = (ord '.', (0.5, 0.3, 0.1), (0.5, 0.3, 0.1))
         tileToChar WallWood  = (ord '#', (0.5, 0.3, 0.1), (0.5, 0.3, 0.1))
@@ -47,24 +49,30 @@ townmap True con = do
 worldmap :: ConsoleLoop
 worldmap False _  = return ()
 worldmap True con = do
-    wmap <- fmap worldTileMap get
+    gstate <- get
     lift $ do
         clearConsole
-        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] wmap
-        -- todo: draw villages from worldVillageMap
+        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy (worldmapTileToChar tile):iolist) [] (worldTileMap gstate)
+        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy (villageToChar tile):iolist) [] (worldVillageMap gstate)
 
     consoleLoop con worldmap
     where
-        worldmapTileToChar :: WorldMapTile -> (Int, Color, Color)
-        worldmapTileToChar Plains   = (ord '"', (0.4, 0.7, 0.4), (0.9, 0.9, 0.1))
-        worldmapTileToChar Mountain = (ord '^', (0.9, 0.9, 0.9), (0.1, 0.1, 0.1))
-        worldmapTileToChar Forest   = (5      , (0.1, 0.7, 0.1), (0.1, 0.1, 0.1))
-        worldmapTileToChar Lake     = (ord '=', (0.0, 0.0, 0.3), (0.3, 0.3, 0.9))
-        worldmapTileToChar River    = (ord '~', (0.3, 0.3, 0.5), (0.6, 0.6, 1.0))
-        worldmapTileToChar _        = (ord '?', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        villageToChar :: Village -> CharInfo
+        villageToChar (Village _ _ False) = (ord 'o', (0.7, 0.4, 0.2), (0.3, 0.1, 0.0))
+        villageToChar (Village _ _ True)  = (ord 'o', (0.9, 0.1, 0.1), (0.2, 0.1, 0.0))
+        villageToChar Castle              = (ord '#', (0.9, 0.9, 0.9), (0.1, 0.1, 0.1))
 
-        drawTile :: Point -> WorldMapTile -> IO ()
-        drawTile xy t = let (ascii, col, col2) = worldmapTileToChar t
+        worldmapTileToChar :: WorldMapTile -> CharInfo
+        worldmapTileToChar Plains    = (ord '.', (0.4, 0.7, 0.4), (0.9, 0.9, 0.1))
+        worldmapTileToChar Mountain  = (ord '^', (0.9, 0.9, 0.9), (0.1, 0.1, 0.1))
+        worldmapTileToChar Forest    = (5      , (0.1, 0.7, 0.1), (0.1, 0.1, 0.1))
+        worldmapTileToChar Lake      = (ord '=', (0.0, 0.0, 0.3), (0.3, 0.3, 0.9))
+        worldmapTileToChar River     = (ord '~', (0.3, 0.3, 0.5), (0.6, 0.6, 1.0))
+        worldmapTileToChar TowerTile = (ord 'I', (0.8, 0.3, 0.6), (0.4, 0.1, 0.3))
+        worldmapTileToChar _         = (ord '?', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
+        drawTile :: Point -> CharInfo -> IO ()
+        drawTile xy t = let (ascii, col, col2) = t
                         in colorChar2 col col2 ascii xy
 
 
