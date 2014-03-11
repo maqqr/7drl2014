@@ -155,9 +155,11 @@ mainmenu :: Bool -> Console -> IO ()
 mainmenu False _  = return ()
 mainmenu True con = do
     clearConsole
-    titleString "Necromancer Simulator 2014" (25, 7)
-    titleString "(S)tart New Game" (30, 12)
-    titleString "(Q)uit Game" (30, 14)
+    titleString "|----------------------------|" (23, 6)
+    titleString "| Necromancer Simulator 2014 |" (23, 7)
+    titleString "|----------------------------|" (23, 8)
+    titleString "(S)tart New Game" (30, 14)
+    titleString "(Q)uit Game" (30, 16)
     when (con `keyPressed` Key'S) $ newGame >>= runGame (advanceInput con)
     unless (con `keyPressed` Key'Q) $ consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
     where
