@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.State
 import Graphics.UI.GLFW (Key(..))
 
+import TownGenerator
 import GameData
 import Console
 import Color
@@ -33,6 +34,7 @@ townmap True con = do
     where
         tileToChar :: Tile -> CharInfo
         tileToChar Floor     = (ord '.', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        tileToChar Grass     = (ord '.', (0.2, 0.8, 0.2), (0.2, 0.8, 0.2))
         tileToChar Road      = (ord '.', (0.5, 0.3, 0.1), (0.5, 0.3, 0.1))
         tileToChar WallWood  = (ord '#', (0.5, 0.3, 0.1), (0.5, 0.3, 0.1))
         tileToChar WallStone = (ord '#', (0.7, 0.7, 0.7), (0.7, 0.7, 0.7))
@@ -64,9 +66,17 @@ worldmap True con = do
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
 
+    -- Enter village
+    when (con `keysPressed` [Key'Enter]) $ enterVillage
 
     consoleLoop con worldmap
     where
+        enterVillage :: GameState ()
+        enterVillage = do
+            rndVillage <- lift $ randomVillageMap (0, 0, 79, 40)
+            modify (\g -> g { tileMap = rndVillage })
+            consoleLoop con townmap
+
         moveKeys :: [([Key], Point)]
         moveKeys = [([Key'H, Key'Pad4], (-1, 0)), ([Key'L, Key'Pad6], (1, 0)),
                     ([Key'K, Key'Pad8], (0, -1)), ([Key'J, Key'Pad2], (0, 1)),

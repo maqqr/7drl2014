@@ -14,6 +14,7 @@ ptrace' :: Show a => String -> a -> a
 ptrace' s a = trace ("\n" ++ s ++ ";" ++ show a) a
 
 data Tile = Floor
+          | Grass
           | Road
           | WallWood
           | WallStone
