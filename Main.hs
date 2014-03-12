@@ -19,6 +19,12 @@ type ConsoleLoop = Bool -> Console -> GameState ()
 
 type CharInfo = (Int, Color, Color)
 
+moveKeys :: [([Key], Point)]
+moveKeys = [([Key'H, Key'Pad4], (-1, 0)), ([Key'L, Key'Pad6], (1, 0)),
+            ([Key'K, Key'Pad8], (0, -1)), ([Key'J, Key'Pad2], (0, 1)),
+            ([Key'Y, Key'Pad7], (-1,-1)), ([Key'U, Key'Pad9], (1,-1)),
+            ([Key'B, Key'Pad1], (-1, 1)), ([Key'N, Key'Pad3], (1, 1))]
+
 consoleLoop :: Console -> ConsoleLoop -> GameState ()
 consoleLoop con f = lift (consoleIsRunning con) >>= \run -> lift (flushConsole con) >>= f run
 
@@ -29,6 +35,11 @@ townmap True con = do
     lift $ do
         clearConsole
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] (tileMap gstate)
+
+        colorChar (0.8, 0.3, 0.5) (ord '@') (place . player $ gstate)
+
+    -- Move player
+    mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
 
     consoleLoop con townmap
     where
@@ -47,6 +58,25 @@ townmap True con = do
         drawTile :: Point -> Tile -> IO ()
         drawTile xy t = let (ascii, col, col2) = tileToChar t
                         in colorChar2 col col2 ascii xy
+
+        blocked :: Game -> Point -> Bool
+        blocked game xy = fromMaybe True . fmap solidTile $ M.lookup xy (tileMap game)
+            where
+                solidTile WallWood  = True
+                solidTile WallStone = True
+                solidTile Tree      = True
+                solidTile Water     = True
+                solidTile Gate      = True
+                solidTile _        = False
+
+        movePlayer :: Point -> GameState ()
+        movePlayer delta = get >>= movePlayer'
+            where
+                movePlayer' gstate = when (not $ blocked gstate newPos) $ modify (\g -> g { player = oldplayer { place = newPos } })
+                    where
+                        oldplayer = player gstate
+                        oldxy     = place oldplayer
+                        newPos    = oldxy ^+^ delta
 
 
 worldmap :: ConsoleLoop
@@ -73,15 +103,9 @@ worldmap True con = do
     where
         enterVillage :: GameState ()
         enterVillage = do
-            rndVillage <- lift $ randomVillageMap (0, 0, 79, 40)
+            rndVillage <- lift $ randomVillageMap (0, 0, 80, 50)
             modify (\g -> g { tileMap = rndVillage })
             consoleLoop con townmap
-
-        moveKeys :: [([Key], Point)]
-        moveKeys = [([Key'H, Key'Pad4], (-1, 0)), ([Key'L, Key'Pad6], (1, 0)),
-                    ([Key'K, Key'Pad8], (0, -1)), ([Key'J, Key'Pad2], (0, 1)),
-                    ([Key'Y, Key'Pad7], (-1,-1)), ([Key'U, Key'Pad9], (1,-1)),
-                    ([Key'B, Key'Pad1], (-1, 1)), ([Key'N, Key'Pad3], (1, 1))]
 
         villageToChar :: Village -> CharInfo
         villageToChar (Village _ _ False) = (ord 'o', (0.7, 0.4, 0.2), (0.3, 0.1, 0.0))

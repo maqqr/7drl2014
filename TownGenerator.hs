@@ -112,17 +112,22 @@ randomVillageMap (sx, sy, w, h) = do
     bsp <- genBsp (sx, sy, w-1, h-1)
     let emptyMap = M.fromList [((x, y), Grass) | x <- [sx..w-1], y <- [sy..h-1]]
     bspWithHouses <- generateHouses bsp
-    return . buildHouses emptyMap . ptrace . F.foldr ((:) . snd) [] $ bspWithHouses
+    return . buildHouses emptyMap . ptrace . F.foldr (:) [] $ bspWithHouses
     where
         minHouseSize = 5
 
-        buildHouses :: TileMap -> [Rect] -> TileMap
+        buildHouses :: TileMap -> [(Rect, Rect)] -> TileMap
         buildHouses = foldr buildHouse
 
-        buildHouse :: Rect -> TileMap -> TileMap
-        buildHouse (x',y',w',h') = (flip . foldr . uncurry $ M.insert) houseTiles
+        buildHouse :: (Rect, Rect) -> TileMap -> TileMap
+        buildHouse ((areax, areay, areaw, areah),(x',y',w',h')) = (flip . foldr . uncurry $ M.insert) houseTiles
             where
-                houseTiles = [((x, y), Floor) | x <- [x'..x'+w'], y <- [y'..y'+h']]
+                houseTiles = [((x, y), selectTile (x, y)) | x <- [x'..x'+w'], y <- [y'..y'+h']] ++ road
+                selectTile (x, y)
+                    | y == y' && x == x' + (w' `quot` 2) = DoorClose
+                    | x == x'+w' || y == y'+h' || x == x' || y == y' = WallWood
+                    | otherwise = Floor
+                road = [((x, areay+areah), Road) | x <- [areax..areax+areaw]] ++ [((areax+areaw, y), Road) | y <- [areay..areay+areah]]
 
         generateHouses :: Bsp Rect -> IO (Bsp (Rect, Rect))
         generateHouses = traverse planHouse
