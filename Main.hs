@@ -36,6 +36,9 @@ townmap True con = do
         clearConsole
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] (tileMap gstate)
 
+        sequence_ $ M.foldrWithKey (\xy n iolist -> drawNpc (xy, n):iolist) [] (npcMap gstate)
+        sequence_ $ M.foldrWithKey (\xy z iolist -> drawZombie (xy, z):iolist) [] (minionMap gstate)
+
         colorChar (0.8, 0.3, 0.5) (ord '@') (place . player $ gstate)
 
     -- Move player
@@ -78,8 +81,8 @@ townmap True con = do
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
-drawNpc :: Npc -> Point -> IO ()
-drawNpc n xy = let (ascii, col1, col2) = npcData n
+drawNpc :: (Point, Npc) -> IO ()
+drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
                   in colorChar2 col1 col2 ascii xy 
     where
         npcData :: Npc -> CharInfo
@@ -88,10 +91,14 @@ drawNpc n xy = let (ascii, col1, col2) = npcData n
         npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
         npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
 
-drawZombie :: Zombi -> Point -> IO ()
-drawZombie z xy = let (ascii, col1, col2) = zombiData z
-                  in colorChar2 col1 col2 ascii xy 
+drawZombie :: (Point, [Zombi]) -> IO ()
+drawZombie (xy, []) = return ()
+drawZombie (xy, (z:zs)) = do
+        colorChar2 col1 col2 ascii xy
+        drawZombie (xy, zs)
     where
+        (ascii, col1, col2) = zombiData z
+
         zombiData :: Zombi -> CharInfo
         zombiData GuardZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
         zombiData EliteZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
