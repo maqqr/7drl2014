@@ -27,7 +27,7 @@ The dark bottom area of the window will be filled with information about your ow
 
 Village generator is slowly taking shape. The player can move around in the world map and enter any village. Next we are going to add villagers and zombies.
 
-The generator uses [binary space partitioning](http://en.wikipedia.org/wiki/Binary_space_partitioning) to split the map into smaller areas ad then it generates a random house in each area and adds roads to the borders of the area. The village generator is defined in [TownGenerator.hs](TownGenerator.hs).
+The generator uses [binary space partitioning](http://en.wikipedia.org/wiki/Binary_space_partitioning) to split the map into smaller areas and then it generates a random house in each area and adds roads to the borders of the area. The village generator is defined in [TownGenerator.hs](TownGenerator.hs).
 
 ### Day 4
 
