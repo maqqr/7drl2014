@@ -78,6 +78,25 @@ townmap True con = do
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
+drawNpc :: Npc -> Point -> IO ()
+drawNpc n xy = let (ascii, col1, col2) = npcData n
+                  in colorChar2 col1 col2 ascii xy 
+    where
+        npcData :: Npc -> CharInfo
+        npcData Guard = (ord '@', (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
+        npcData Child = (ord '@', (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
+        npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
+        npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
+
+drawZombie :: Zombi -> Point -> IO ()
+drawZombie z xy = let (ascii, col1, col2) = zombiData z
+                  in colorChar2 col1 col2 ascii xy 
+    where
+        zombiData :: Zombi -> CharInfo
+        zombiData GuardZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
+        zombiData EliteZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
+        zombiData KingZombi  = (ord '&', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
+        zombiData _          = (ord '&', (0.7, 0.6, 0.6), (1.0, 0.8, 0.8))
 
 worldmap :: ConsoleLoop
 worldmap False _  = return ()
