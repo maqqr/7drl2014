@@ -103,7 +103,7 @@ drawZombie (xy, (z:zs)) = do
         zombiData GuardZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
         zombiData EliteZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
         zombiData KingZombi  = (ord '&', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
-        zombiData _          = (ord '&', (0.7, 0.6, 0.6), (1.0, 0.8, 0.8))
+        zombiData _          = (ord '&', (0.7, 0.1, 0.1), (1.0, 0.1, 0.1))
 
 worldmap :: ConsoleLoop
 worldmap False _  = return ()
