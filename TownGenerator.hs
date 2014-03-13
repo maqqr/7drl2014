@@ -107,8 +107,8 @@ genBsp initialRect = splitter
 
 
 -- | Generates random village map
-randomVillageMap :: Rect -> IO TileMap
-randomVillageMap (sx, sy, w, h) = do
+randomVillageMap :: Rect -> Int -> IO TileMap
+randomVillageMap (sx, sy, w, h) size = do
     bsp <- genBsp (sx, sy, w-1, h-1)
     let emptyMap = M.fromList [((x, y), Grass) | x <- [sx..w-1], y <- [sy..h-1]]
     bspWithHouses <- generateHouses bsp

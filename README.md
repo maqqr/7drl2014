@@ -31,4 +31,8 @@ The generator uses [binary space partitioning](http://en.wikipedia.org/wiki/Bina
 
 ### Day 4
 
+Not much happened, because half of our development team didn't have time to work on this game today. We managed to get zombie and npc drawing working.
+
+### Day 5
+
 Coming soon (:tm:).

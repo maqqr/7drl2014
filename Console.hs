@@ -81,7 +81,22 @@ drawString :: CharacterRenderer -- ^ Character drawing function
            -> (Int, Int)        -- ^ Position on the console
            -> IO ()
 drawString _ [] _ = return ()
-drawString df (c:hars) (x, y) = df (ord c) (x, y) >> drawString df hars (x+1, y)
+drawString cr (c:hars) (x, y) = cr (ord c) (x, y) >> drawString cr hars (x+1, y)
+
+drawStringCentered :: CharacterRenderer -> String -> (Int, Int) -> IO ()
+drawStringCentered cr str (x, y) = drawString cr str (x - offset, y)
+    where
+        offset = length str `quot` 2
+
+drawFrame :: CharacterRenderer -> (Int, Int) -> Int -> Int -> IO ()
+drawFrame cr (sx, sy) width height = mapM_ (uncurry cr) $ concat [top, bottom, left, right, corners]
+    where
+        top     = [(ord '=', (x, sy))        | x <- [sx..sx+width]]
+        bottom  = [(ord '=', (x, sy+height)) | x <- [sx..sx+width]]
+        left    = [(ord 'I', (sx,       y))  | y <- [sy..sy+height]]
+        right   = [(ord 'I', (sx+width, y))  | y <- [sy..sy+height]]
+        corners = [(ord '/', (sx, sy)), (ord '\\', (sx+width, sy)),
+                   (ord '\\', (sx,sy+height)), (ord '/', (sx+width,sy+height))]
 
 
 -- | Clears the console

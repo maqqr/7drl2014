@@ -36,6 +36,8 @@ townmap True con = do
         clearConsole
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] (tileMap gstate)
 
+        -- Draw corpses, npcs & zombies
+        sequence_ $ M.foldrWithKey (\xy c iolist -> drawCorpse (xy, c):iolist) [] (corpseMap gstate)
         sequence_ $ M.foldrWithKey (\xy n iolist -> drawNpc (xy, n):iolist) [] (npcMap gstate)
         sequence_ $ M.foldrWithKey (\xy z iolist -> drawZombie (xy, z):iolist) [] (minionMap gstate)
 
@@ -81,29 +83,35 @@ townmap True con = do
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
-drawNpc :: (Point, Npc) -> IO ()
-drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
-                  in colorChar2 col1 col2 ascii xy 
-    where
-        npcData :: Npc -> CharInfo
-        npcData Guard = (ord '@', (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
-        npcData Child = (ord '@', (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
-        npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
-        npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
+        drawNpc :: (Point, Npc) -> IO ()
+        drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
+                          in colorChar2 col1 col2 ascii xy 
+            where
+                npcData :: Npc -> CharInfo
+                npcData Guard = (ord '@', (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
+                npcData Child = (ord '@', (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
+                npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
+                npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
 
-drawZombie :: (Point, [Zombi]) -> IO ()
-drawZombie (xy, []) = return ()
-drawZombie (xy, (z:zs)) = do
-        colorChar2 col1 col2 ascii xy
-        drawZombie (xy, zs)
-    where
-        (ascii, col1, col2) = zombiData z
+        -- riittäisikö tässä vain päällimmäisen zombin piirto?
+        drawZombie :: (Point, [Zombi]) -> IO ()
+        drawZombie (_,  []) = return ()
+        drawZombie (xy, (z:zs)) = do
+                colorChar2 col1 col2 ascii xy
+                drawZombie (xy, zs)
+            where
+                (ascii, col1, col2) = zombiData z
 
-        zombiData :: Zombi -> CharInfo
-        zombiData GuardZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
-        zombiData EliteZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
-        zombiData KingZombi  = (ord '&', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
-        zombiData _          = (ord '&', (0.7, 0.1, 0.1), (1.0, 0.1, 0.1))
+                zombiData :: Zombi -> CharInfo
+                zombiData GuardZombi = (ord 'Z', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
+                zombiData EliteZombi = (ord 'Z', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
+                zombiData KingZombi  = (ord 'Z', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
+                zombiData _          = (ord 'Z', (0.7, 0.1, 0.1), (1.0, 0.1, 0.1))
+
+        drawCorpse :: (Point, [Corpse]) -> IO ()
+        drawCorpse (_,  []) = return ()
+        drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) (ord '&') xy
+
 
 worldmap :: ConsoleLoop
 worldmap False _  = return ()
@@ -119,19 +127,40 @@ worldmap True con = do
         -- Draw player
         colorChar (0.8, 0.3, 0.5) (ord '@') (worldmapPosition gstate)
 
+        -- Draw tower info
+        drawFrame whiteChar (0, 40) 80 20
+        drawStringCentered whiteChar "INFORMATION ABOUT YOUR NECROMANCER TOWER" (40, 40)
+        drawInfo (5, 42) gstate (zombieStr.tower) "Zombie strength: "
+        drawInfo (5, 43) gstate (zombieCon.tower) "Zombie ???: "
+        drawInfo (5, 44) gstate (zombieMax.tower) "Max zombie count: "
+
+        drawInfo (40, 42) gstate (playerHp.tower) "Player max HP: "
+        drawInfo (40, 43) gstate (spellDmg.tower) "Spell damage: "
+        drawInfo (40, 44) gstate (playerHp.tower) "Spells up (?): "
+
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
+
+    -- todo: upgrade tower if key was pressed
 
     -- Enter village
     when (con `keysPressed` [Key'Enter]) $ enterVillage
 
     consoleLoop con worldmap
     where
+        drawInfo :: Show a => Point -> Game -> (Game -> a) -> String -> IO ()
+        drawInfo xy gstate g str = drawString whiteChar (str ++ show (g gstate)) xy
+
         enterVillage :: GameState ()
         enterVillage = do
-            rndVillage <- lift $ randomVillageMap (0, 0, 80, 50)
-            modify (\g -> g { tileMap = rndVillage })
-            consoleLoop con townmap
+            gstate <- get
+            let targetVillage = M.lookup (place . player $ gstate) (worldVillageMap gstate)
+            case targetVillage of
+                Just village -> do
+                    rndVillage <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
+                    modify (\g -> g { tileMap = rndVillage })
+                    consoleLoop con townmap
+                Nothing -> return ()
 
         villageToChar :: Village -> CharInfo
         villageToChar (Village _ _ False) = (ord 'o', (0.7, 0.4, 0.2), (0.3, 0.1, 0.0))
