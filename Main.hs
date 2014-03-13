@@ -106,9 +106,9 @@ townmap True con = do
                 zombiData KingZombi  = (ord 'Z', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
                 zombiData _          = (ord 'Z', (0.7, 0.1, 0.1), (1.0, 0.1, 0.1))
 
-        drawCorpse :: (Point, [Corpse])
+        drawCorpse :: (Point, [Corpse]) -> IO ()
         drawCorpse (_,  []) = return ()
-        drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) '&' xy
+        drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) (ord '&') xy
 
 
 worldmap :: ConsoleLoop
