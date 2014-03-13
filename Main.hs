@@ -137,9 +137,14 @@ worldmap True con = do
     where
         enterVillage :: GameState ()
         enterVillage = do
-            rndVillage <- lift $ randomVillageMap (0, 0, 80, 50)
-            modify (\g -> g { tileMap = rndVillage })
-            consoleLoop con townmap
+            gstate <- get
+            let targetVillage = M.lookup (place . player $ gstate) (worldVillageMap gstate)
+            case targetVillage of
+                Just village -> do
+                    rndVillage <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
+                    modify (\g -> g { tileMap = rndVillage })
+                    consoleLoop con townmap
+                Nothing -> return ()
 
         villageToChar :: Village -> CharInfo
         villageToChar (Village _ _ False) = (ord 'o', (0.7, 0.4, 0.2), (0.3, 0.1, 0.0))

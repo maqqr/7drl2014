@@ -33,7 +33,7 @@ type TileMap = Map Point Tile
 
 data Village = Castle | Village {
     villageName     :: String,
-    size            :: Int,
+    villageSize     :: Int,
     playerStatus    :: Bool
 }   deriving (Eq, Show)
 
