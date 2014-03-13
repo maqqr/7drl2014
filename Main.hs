@@ -130,13 +130,13 @@ worldmap True con = do
         -- Draw tower info
         drawFrame whiteChar (0, 40) 80 20
         drawStringCentered whiteChar "INFORMATION ABOUT YOUR NECROMANCER TOWER" (40, 40)
-        drawInfo (5, 42) gstate (zombieStr.tower) "Zombie strength: "
-        drawInfo (5, 43) gstate (zombieCon.tower) "Zombie ???: "
-        drawInfo (5, 44) gstate (zombieMax.tower) "Max zombie count: "
+        drawInfo (5, 44) gstate (zombieStr.tower) "Zombie strength: "
+        drawInfo (5, 46) gstate (zombieCon.tower) "Zombie ???: "
+        drawInfo (5, 48) gstate (zombieMax.tower) "Max zombie count: "
 
-        drawInfo (40, 42) gstate (playerHp.tower) "Player max HP: "
-        drawInfo (40, 43) gstate (spellDmg.tower) "Spell damage: "
-        drawInfo (40, 44) gstate (playerHp.tower) "Spells up (?): "
+        drawInfo (40, 44) gstate (playerHp.tower) "Player max HP: "
+        drawInfo (40, 46) gstate (spellDmg.tower) "Spell damage: "
+        drawInfo (40, 48) gstate (playerHp.tower) "Spells up (?): "
 
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
@@ -154,7 +154,7 @@ worldmap True con = do
         enterVillage :: GameState ()
         enterVillage = do
             gstate <- get
-            let targetVillage = M.lookup (place . player $ gstate) (worldVillageMap gstate)
+            let targetVillage = M.lookup (worldmapPosition gstate) (worldVillageMap gstate)
             case targetVillage of
                 Just village -> do
                     rndVillage <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)

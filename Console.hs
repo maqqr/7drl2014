@@ -89,8 +89,9 @@ drawStringCentered cr str (x, y) = drawString cr str (x - offset, y)
         offset = length str `quot` 2
 
 drawFrame :: CharacterRenderer -> (Int, Int) -> Int -> Int -> IO ()
-drawFrame cr (sx, sy) width height = mapM_ (uncurry cr) $ concat [top, bottom, left, right, corners]
+drawFrame cr (sx, sy) width' height' = mapM_ (uncurry cr) $ concat [top, bottom, left, right, corners]
     where
+        (width, height) = (width' - 1, height' - 1)
         top     = [(ord '=', (x, sy))        | x <- [sx..sx+width]]
         bottom  = [(ord '=', (x, sy+height)) | x <- [sx..sx+width]]
         left    = [(ord 'I', (sx,       y))  | y <- [sy..sy+height]]
