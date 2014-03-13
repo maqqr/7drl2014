@@ -81,29 +81,35 @@ townmap True con = do
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
-drawNpc :: (Point, Npc) -> IO ()
-drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
-                  in colorChar2 col1 col2 ascii xy 
-    where
-        npcData :: Npc -> CharInfo
-        npcData Guard = (ord '@', (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
-        npcData Child = (ord '@', (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
-        npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
-        npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
+        drawNpc :: (Point, Npc) -> IO ()
+        drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
+                          in colorChar2 col1 col2 ascii xy 
+            where
+                npcData :: Npc -> CharInfo
+                npcData Guard = (ord '@', (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
+                npcData Child = (ord '@', (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
+                npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
+                npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
 
-drawZombie :: (Point, [Zombi]) -> IO ()
-drawZombie (xy, []) = return ()
-drawZombie (xy, (z:zs)) = do
-        colorChar2 col1 col2 ascii xy
-        drawZombie (xy, zs)
-    where
-        (ascii, col1, col2) = zombiData z
+        -- riittäisikö tässä vain päällimmäisen zombin piirto?
+        drawZombie :: (Point, [Zombi]) -> IO ()
+        drawZombie (_,  []) = return ()
+        drawZombie (xy, (z:zs)) = do
+                colorChar2 col1 col2 ascii xy
+                drawZombie (xy, zs)
+            where
+                (ascii, col1, col2) = zombiData z
 
-        zombiData :: Zombi -> CharInfo
-        zombiData GuardZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
-        zombiData EliteZombi = (ord '&', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
-        zombiData KingZombi  = (ord '&', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
-        zombiData _          = (ord '&', (0.7, 0.1, 0.1), (1.0, 0.1, 0.1))
+                zombiData :: Zombi -> CharInfo
+                zombiData GuardZombi = (ord 'Z', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
+                zombiData EliteZombi = (ord 'Z', (0.7, 0.2, 0.2), (0.7, 0.7, 0.7))
+                zombiData KingZombi  = (ord 'Z', (0.7, 0.7, 0.4), (0.8, 0.8, 0.5))
+                zombiData _          = (ord 'Z', (0.7, 0.1, 0.1), (1.0, 0.1, 0.1))
+
+        drawCorpse :: (Point, [Corpse])
+        drawCorpse (_,  []) = return ()
+        drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) '&' xy
+
 
 worldmap :: ConsoleLoop
 worldmap False _  = return ()
