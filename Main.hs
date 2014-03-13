@@ -127,14 +127,30 @@ worldmap True con = do
         -- Draw player
         colorChar (0.8, 0.3, 0.5) (ord '@') (worldmapPosition gstate)
 
+        -- Draw tower info
+        drawFrame whiteChar (0, 40) 80 20
+        drawStringCentered whiteChar "INFORMATION ABOUT YOUR NECROMANCER TOWER" (40, 40)
+        drawInfo (5, 42) gstate (zombieStr.tower) "Zombie strength: "
+        drawInfo (5, 43) gstate (zombieCon.tower) "Zombie ???: "
+        drawInfo (5, 44) gstate (zombieMax.tower) "Max zombie count: "
+
+        drawInfo (40, 42) gstate (playerHp.tower) "Player max HP: "
+        drawInfo (40, 43) gstate (spellDmg.tower) "Spell damage: "
+        drawInfo (40, 44) gstate (playerHp.tower) "Spells up (?): "
+
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
+
+    -- todo: upgrade tower if key was pressed
 
     -- Enter village
     when (con `keysPressed` [Key'Enter]) $ enterVillage
 
     consoleLoop con worldmap
     where
+        drawInfo :: Show a => Point -> Game -> (Game -> a) -> String -> IO ()
+        drawInfo xy gstate g str = drawString whiteChar (str ++ show (g gstate)) xy
+
         enterVillage :: GameState ()
         enterVillage = do
             gstate <- get
