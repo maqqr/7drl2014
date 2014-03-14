@@ -35,4 +35,8 @@ Not much happened, because half of our development team didn't have time to work
 
 ### Day 5
 
+We started to work on line of sight functions and added drawing of player, npcs, zombies and corpses. Town generator adds doors to the houses. Your tower's stats are displayed on the world map.
+
+### Day 6
+
 Coming soon (:tm:).
