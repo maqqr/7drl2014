@@ -131,6 +131,7 @@ type NpcMap = Map Point Npc
 data Game = Game {
     player           :: Player,
     tower            :: Tower,
+    zombieArmy       :: [Zombi],
     worldTileMap     :: WorldTileMap,
     worldVillageMap  :: WorldVillageMap,
     worldmapPosition :: Point,
@@ -336,27 +337,14 @@ worldmapTiles = stringToWorldTileMap [
 newGame :: IO Game
 newGame = return $ Game (Player "" (0,0) 0 100 100 [])
                         (Tower 0 0 0 0 0 60)
+                        []
                         worldmapTiles
                         (M.fromList [((20, 20), Village "Test village" 10 False),
                                      ((33, 30), Village "Another village" 15 False),
                                      ((60, 25), Castle)]) --worldVillageMap
                         (10, 10)
-                        (M.fromList [((9,10), [GuardZombi]),((10,10), [KingZombi]),((11,10), [Zombi, Zombi]),((12,10), [EliteZombi])])
+                        (M.fromList [])
                         (M.fromList [((9,20), Guard),((10,20), King),((11,20), Male),((12,20), Child)])
                         (M.fromList [])
                         (M.fromList [])
                         []
-
--- Testing
-
-testGame :: Game
-testGame = Game (Player "" (0,0) 0 100 100 [])
-                (Tower 0 0 0 0 0 60)
-                (M.fromList []) --worldTileMap
-                (M.fromList []) --worldVillageMap
-                (0, 0)
-                (M.fromList []) -- minion
-                (M.fromList [((1,1), Male)]) -- npc
-                (M.fromList []) -- corpse
-                (M.fromList []) -- tile
-                []

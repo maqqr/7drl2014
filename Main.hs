@@ -24,7 +24,8 @@ moveKeys :: [([Key], Point)]
 moveKeys = [([Key'H, Key'Pad4], (-1, 0)), ([Key'L, Key'Pad6], (1, 0)),
             ([Key'K, Key'Pad8], (0, -1)), ([Key'J, Key'Pad2], (0, 1)),
             ([Key'Y, Key'Pad7], (-1,-1)), ([Key'U, Key'Pad9], (1,-1)),
-            ([Key'B, Key'Pad1], (-1, 1)), ([Key'N, Key'Pad3], (1, 1))]
+            ([Key'B, Key'Pad1], (-1, 1)), ([Key'N, Key'Pad3], (1, 1)),
+            ([Key'Pad5], (0, 0))]
 
 consoleLoop :: Console -> ConsoleLoop -> GameState ()
 consoleLoop con f = lift (consoleIsRunning con) >>= \run -> lift (flushConsole con) >>= f run
@@ -48,7 +49,7 @@ townmap True con = do
 
         -- Draw message buffer
         drawFrame whiteChar (0, 50) 80 10
-        drawMessageBuffer whiteChar (messageBuffer gstate) (0, 52)
+        drawMessageBuffer whiteChar (messageBuffer gstate) (2, 51)
 
         -- Draw player health
         let hp' = hp . player $ gstate
@@ -89,22 +90,6 @@ townmap True con = do
         drawTile xy t = let (ascii, col, col2) = tileToChar t
                         in colorChar2 col col2 ascii xy
 
-        blocked :: Game -> Point -> Bool
-        blocked game xy = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
-
-        notTransparent :: Game -> Point -> Bool
-        notTransparent game xy = fromMaybe True . fmap tileNotTransparent $ M.lookup xy (tileMap game)
-
-        movePlayer :: Point -> GameState ()
-        movePlayer delta = get >>= movePlayer'
-            where
-                movePlayer' gstate = when (not $ blocked gstate newPos) $ modify (\g -> g { player = oldplayer { place = newPos } })
-                    where
-                        oldplayer = player gstate
-                        oldxy     = place oldplayer
-                        newPos    = oldxy ^+^ delta
-
-
         drawNpc :: (Point, Npc) -> IO ()
         drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
                           in colorChar2 col1 col2 ascii xy 
@@ -133,6 +118,26 @@ townmap True con = do
         drawCorpse :: (Point, [Corpse]) -> IO ()
         drawCorpse (_,  []) = return ()
         drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) (ord '&') xy
+
+        blocked :: Game -> Point -> Bool
+        blocked game xy = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
+
+        notTransparent :: Game -> Point -> Bool
+        notTransparent game xy = fromMaybe True . fmap tileNotTransparent $ M.lookup xy (tileMap game)
+
+        movePlayer :: Point -> GameState ()
+        movePlayer delta = get >>= movePlayer'
+            where
+                movePlayer' gstate = when (not $ blocked gstate newPos) $ do
+                        modify (\g -> g { player = oldplayer { place = newPos } })
+                        updateAI
+                    where
+                        oldplayer = player gstate
+                        oldxy     = place oldplayer
+                        newPos    = oldxy ^+^ delta
+
+        updateAI :: GameState ()
+        updateAI = return () -- fold?
 
 
 worldmap :: ConsoleLoop
@@ -179,9 +184,13 @@ worldmap True con = do
             let targetVillage = M.lookup (worldmapPosition gstate) (worldVillageMap gstate)
             case targetVillage of
                 Just village -> do
+                    let oldplayer = player gstate
+                    let playerPosOnTown = (0, 0) -- todo: make random?
                     (rndVillage, npcs) <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
                     modify (\g -> g { tileMap = rndVillage,
                                       npcMap = npcs,
+                                      minionMap = M.fromList [(playerPosOnTown, zombieArmy gstate)],
+                                      player = oldplayer { place = playerPosOnTown },
                                       messageBuffer = ["You entered " ++ villageName village ++ "."] })
                     consoleLoop con townmap
                 Nothing -> return ()
