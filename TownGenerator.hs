@@ -85,8 +85,6 @@ splitBsp p (Leaf r) = do
     horizontal <- randomBool
     let (leftr, rightr) = splitRect split horizontal r
     if p leftr && p rightr then do
-            --left <- splitBsp p (Leaf leftr)
-            --right <- splitBsp p (Leaf rightr)
             let branch = if horizontal then HBranch else VBranch
             return $ branch split (Leaf leftr) (Leaf rightr)
         else return (Leaf r)

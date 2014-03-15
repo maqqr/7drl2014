@@ -46,6 +46,15 @@ townmap True con = do
 
         colorChar (0.8, 0.3, 0.5) (ord '@') playerPlace
 
+        -- Draw message buffer
+        drawFrame whiteChar (0, 50) 80 10
+        drawMessageBuffer whiteChar (messageBuffer gstate) (0, 52)
+
+        -- Draw player health
+        let hp' = hp . player $ gstate
+        let maxHp' = maxHp . player $ gstate
+        drawStringCentered whiteChar ("Hit points: " ++ show hp' ++ " / " ++ show maxHp') (40, 50)
+
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
 
@@ -53,6 +62,10 @@ townmap True con = do
     where
         sightR = 14
         tilesInSight (px, py) = [(px+x, py+y) | x <- [-sightR..sightR], y <- [-sightR..sightR], x*x + y*y < sightR * sightR]
+
+        drawMessageBuffer :: CharacterRenderer -> [String] -> Point -> IO ()
+        drawMessageBuffer _  []     _      = return ()
+        drawMessageBuffer cr (m:ms) (x, y) = drawString cr m (x, y) >> drawMessageBuffer cr ms (x, y+1)
 
         mapDrawer :: Game -> Point -> Maybe Tile -> [IO ()] -> [IO ()]
         mapDrawer _ _ Nothing = id
@@ -167,7 +180,9 @@ worldmap True con = do
             case targetVillage of
                 Just village -> do
                     (rndVillage, npcs) <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
-                    modify (\g -> g { tileMap = rndVillage, npcMap = npcs })
+                    modify (\g -> g { tileMap = rndVillage,
+                                      npcMap = npcs,
+                                      messageBuffer = ["You entered " ++ villageName village ++ "."] })
                     consoleLoop con townmap
                 Nothing -> return ()
 
