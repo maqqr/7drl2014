@@ -12,6 +12,7 @@ import TownGenerator
 import GameData
 import Console
 import Color
+import Line
 
 type GameState a = StateT Game IO a
 
@@ -34,20 +35,31 @@ townmap True con = do
     gstate <- get
     lift $ do
         clearConsole
-        sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy tile:iolist) [] (tileMap gstate)
+        let tmap = tileMap gstate
+        let playerPlace = place . player $ gstate
+        sequence_ $ foldr (\xy -> mapDrawer gstate xy $ M.lookup xy tmap) [] (tilesInSight playerPlace)
 
         -- Draw corpses, npcs & zombies
         sequence_ $ M.foldrWithKey (\xy c iolist -> drawCorpse (xy, c):iolist) [] (corpseMap gstate)
         sequence_ $ M.foldrWithKey (\xy n iolist -> drawNpc (xy, n):iolist) [] (npcMap gstate)
         sequence_ $ M.foldrWithKey (\xy z iolist -> drawZombie (xy, z):iolist) [] (minionMap gstate)
 
-        colorChar (0.8, 0.3, 0.5) (ord '@') (place . player $ gstate)
+        colorChar (0.8, 0.3, 0.5) (ord '@') playerPlace
 
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
 
     consoleLoop con townmap
     where
+        sightR = 14
+        tilesInSight (px, py) = [(px+x, py+y) | x <- [-sightR..sightR], y <- [-sightR..sightR], x*x + y*y < sightR * sightR]
+
+        mapDrawer :: Game -> Point -> Maybe Tile -> [IO ()] -> [IO ()]
+        mapDrawer _ _ Nothing = id
+        mapDrawer gstate xy (Just t)
+            | lineOfSight (notTransparent gstate) (place . player $ gstate) xy = (:) (drawTile xy t)
+            | otherwise = id
+
         tileToChar :: Tile -> CharInfo
         tileToChar Floor     = (ord '.', (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         tileToChar Grass     = (ord '.', (0.2, 0.8, 0.2), (0.2, 0.8, 0.2))
@@ -73,6 +85,17 @@ townmap True con = do
                 solidTile Water     = True
                 solidTile Gate      = True
                 solidTile _        = False
+
+        notTransparent :: Game -> Point -> Bool
+        notTransparent game xy = fromMaybe True . fmap solidTile $ M.lookup xy (tileMap game)
+            where
+                solidTile WallWood  = True
+                solidTile WallStone = True
+                solidTile Tree      = True
+                solidTile Water     = True
+                solidTile Gate      = True
+                solidTile DoorClose = True
+                solidTile _         = False
 
         movePlayer :: Point -> GameState ()
         movePlayer delta = get >>= movePlayer'

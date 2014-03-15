@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitForAll, ScopedTypeVariables #-}
 module Line(
 	line,
 	lineOfSight
