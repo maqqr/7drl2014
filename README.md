@@ -39,4 +39,8 @@ We started to work on line of sight functions and added drawing of player, npcs,
 
 ### Day 6
 
+The town generator generates npcs to the town map. The game is currently unplayable and won't be finished, unless a miracle happens during the last night.
+
+### Day 7
+
 Coming soon (:tm:).
