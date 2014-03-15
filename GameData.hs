@@ -109,7 +109,13 @@ data Npc = Guard
          | King
          | MaleUnarmed | FemaleUnarmed | Male | Female
          | Child
-         deriving (Eq)
+         deriving (Eq, Bounded, Enum)
+
+instance Random Npc where
+    random g = case randomR (fromEnum (minBound :: Npc), fromEnum (maxBound :: Npc)) g of
+                 (r, g') -> (toEnum r, g')
+    randomR (a,b) g = case randomR (fromEnum a, fromEnum b) g of
+                        (r, g') -> (toEnum r, g')
 
 instance Show Npc where
     show MaleUnarmed   = "unarmed male"

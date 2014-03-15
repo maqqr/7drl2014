@@ -5,7 +5,7 @@ import qualified Data.Foldable as F
 import qualified Data.Map as M
 import Control.Monad
 import Control.Applicative
-import System.Random (randomRIO)
+import System.Random (randomRIO, randomIO)
 
 import GameData
 
@@ -113,7 +113,8 @@ randomVillageMap (sx, sy, w, h) size = do
     let emptyMap = M.fromList [((x, y), Grass) | x <- [sx..w-1], y <- [sy..h-1]]
     bspWithHouses <- generateHouses bsp
     let tilemap = buildHouses emptyMap . ptrace . F.foldr (:) [] $ bspWithHouses
-    return (tilemap, M.fromList [])
+    potentialNpcList <- potentialNpcs
+    return (tilemap, M.fromList potentialNpcList)
     where
         minHouseSize = 5
 
@@ -140,6 +141,13 @@ randomVillageMap (sx, sy, w, h) size = do
             rx <- randomRIO (x'+1, x' + (w' - rw - 2))
             ry <- randomRIO (y'+1, y' + (h' - rh - 2))
             let generatedRoom = (rx, ry, rw, rh)
-            --print generatedRoom
-            --return (rect, (x'+1, y'+1, w'-2, h'-2))
             return (rect, generatedRoom)
+
+        randomPoint :: IO Point
+        randomPoint = (,) <$> randomRIO (0, w-1) <*> randomRIO (0, h-1)
+
+        potentialNpc :: IO (Point, Npc)
+        potentialNpc = (,) <$> randomPoint <*> randomIO
+
+        potentialNpcs :: IO [(Point, Npc)]
+        potentialNpcs = replicateM size potentialNpc
