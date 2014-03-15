@@ -77,25 +77,10 @@ townmap True con = do
                         in colorChar2 col col2 ascii xy
 
         blocked :: Game -> Point -> Bool
-        blocked game xy = fromMaybe True . fmap solidTile $ M.lookup xy (tileMap game)
-            where
-                solidTile WallWood  = True
-                solidTile WallStone = True
-                solidTile Tree      = True
-                solidTile Water     = True
-                solidTile Gate      = True
-                solidTile _        = False
+        blocked game xy = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
 
         notTransparent :: Game -> Point -> Bool
-        notTransparent game xy = fromMaybe True . fmap solidTile $ M.lookup xy (tileMap game)
-            where
-                solidTile WallWood  = True
-                solidTile WallStone = True
-                solidTile Tree      = True
-                solidTile Water     = True
-                solidTile Gate      = True
-                solidTile DoorClose = True
-                solidTile _         = False
+        notTransparent game xy = fromMaybe True . fmap tileNotTransparent $ M.lookup xy (tileMap game)
 
         movePlayer :: Point -> GameState ()
         movePlayer delta = get >>= movePlayer'
@@ -105,6 +90,7 @@ townmap True con = do
                         oldplayer = player gstate
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
+
 
         drawNpc :: (Point, Npc) -> IO ()
         drawNpc (xy, n) = let (ascii, col1, col2) = npcData n
@@ -180,8 +166,8 @@ worldmap True con = do
             let targetVillage = M.lookup (worldmapPosition gstate) (worldVillageMap gstate)
             case targetVillage of
                 Just village -> do
-                    rndVillage <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
-                    modify (\g -> g { tileMap = rndVillage })
+                    (rndVillage, npcs) <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
+                    modify (\g -> g { tileMap = rndVillage, npcMap = npcs })
                     consoleLoop con townmap
                 Nothing -> return ()
 

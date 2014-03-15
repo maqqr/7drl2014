@@ -107,12 +107,13 @@ genBsp initialRect = splitter
 
 
 -- | Generates random village map
-randomVillageMap :: Rect -> Int -> IO TileMap
+randomVillageMap :: Rect -> Int -> IO (TileMap, NpcMap)
 randomVillageMap (sx, sy, w, h) size = do
     bsp <- genBsp (sx, sy, w-1, h-1)
     let emptyMap = M.fromList [((x, y), Grass) | x <- [sx..w-1], y <- [sy..h-1]]
     bspWithHouses <- generateHouses bsp
-    return . buildHouses emptyMap . ptrace . F.foldr (:) [] $ bspWithHouses
+    let tilemap = buildHouses emptyMap . ptrace . F.foldr (:) [] $ bspWithHouses
+    return (tilemap, M.fromList [])
     where
         minHouseSize = 5
 

@@ -13,6 +13,8 @@ ptrace a = trace (show a) a
 ptrace' :: Show a => String -> a -> a
 ptrace' s a = trace ("\n" ++ s ++ ";" ++ show a) a
 
+type Point = (Int, Int)
+
 data Tile = Floor
           | Grass
           | Road
@@ -24,7 +26,22 @@ data Tile = Floor
           | Gate
           deriving (Eq, Show)
 
-type Point = (Int, Int)
+tileBlocks :: Tile -> Bool
+tileBlocks WallWood  = True
+tileBlocks WallStone = True
+tileBlocks Tree      = True
+tileBlocks Water     = True
+tileBlocks Gate      = True
+tileBlocks _         = False
+
+tileNotTransparent :: Tile -> Bool
+tileNotTransparent WallWood  = True
+tileNotTransparent WallStone = True
+tileNotTransparent Tree      = True
+tileNotTransparent Water     = True
+tileNotTransparent Gate      = True
+tileNotTransparent DoorClose = True
+tileNotTransparent _         = False
 
 (^+^) :: Point -> Point -> Point
 (x, y) ^+^ (x', y') = (x + x', y + y')
