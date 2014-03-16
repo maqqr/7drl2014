@@ -1,12 +1,14 @@
 module Main where
 
 import Data.Char
+import Data.List
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.State
 import Graphics.UI.GLFW (Key(..))
+import System.Random (randomRIO)
 
 import TownGenerator
 import GameData
@@ -42,7 +44,7 @@ townmap True con = do
 
         -- Draw corpses, npcs & zombies
         sequence_ $ M.foldrWithKey (\xy c iolist -> drawCorpse (xy, c):iolist) [] (corpseMap gstate)
-        sequence_ $ M.foldrWithKey (\xy n iolist -> drawNpc (xy, n):iolist) [] (npcMap gstate)
+        sequence_ $ M.foldrWithKey (\xy n iolist -> drawNpc (xy, n):iolist) [] (M.filterWithKey (\k _ -> visionFilter gstate playerPlace k) $ npcMap gstate)
         sequence_ $ M.foldrWithKey (\xy z iolist -> drawZombie (xy, z):iolist) [] (minionMap gstate)
 
         colorChar (0.8, 0.3, 0.5) (ord '@') playerPlace
@@ -63,6 +65,10 @@ townmap True con = do
     where
         sightR = 14
         tilesInSight (px, py) = [(px+x, py+y) | x <- [-sightR..sightR], y <- [-sightR..sightR], x*x + y*y < sightR * sightR]
+
+        visionFilter :: Game -> Point -> Point -> Bool
+        visionFilter gstate (px, py) (x, y) =
+            abs (px - x) <= sightR && abs (py - y) <= sightR && lineOfSight (notTransparent gstate) (px, py) (x, y)
 
         drawMessageBuffer :: CharacterRenderer -> [String] -> Point -> IO ()
         drawMessageBuffer _  []     _      = return ()
@@ -130,14 +136,31 @@ townmap True con = do
             where
                 movePlayer' gstate = when (not $ blocked gstate newPos) $ do
                         modify (\g -> g { player = oldplayer { place = newPos } })
-                        updateAI
+                        updateMap
                     where
                         oldplayer = player gstate
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
-        updateAI :: GameState ()
-        updateAI = return () -- fold?
+        updateMap :: GameState ()
+        updateMap = do
+            gstate <- get
+            g <- foldM updateNpc gstate (M.keys $ npcMap gstate)
+            put g
+
+        updateNpc :: Game -> Point -> GameState Game
+        updateNpc gstate xy = do
+            rx <- lift $ (randomRIO (-1, 1) :: IO Int)
+            ry <- lift $ (randomRIO (-1, 1) :: IO Int)
+            let targetNpc = M.lookup xy (npcMap gstate)
+            case targetNpc of
+                Just npc -> return $ moveNpc npc xy (xy ^+^ (rx, ry)) gstate
+                Nothing  -> return gstate
+        
+        moveNpc :: Npc -> Point -> Point -> Game -> Game
+        moveNpc npc start end gstate
+            | isNothing (M.lookup end $ npcMap gstate) = gstate { npcMap = M.insert end npc . M.delete start $ npcMap gstate }
+            | otherwise = gstate
 
 
 worldmap :: ConsoleLoop

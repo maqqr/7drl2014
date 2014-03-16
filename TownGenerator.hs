@@ -148,4 +148,4 @@ randomVillageMap (sx, sy, w, h) size = do
         potentialNpc = (,) <$> randomPoint <*> randomIO
 
         potentialNpcs :: IO [(Point, Npc)]
-        potentialNpcs = replicateM size potentialNpc
+        potentialNpcs = replicateM (size * 500) potentialNpc
