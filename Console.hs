@@ -92,12 +92,12 @@ drawFrame :: CharacterRenderer -> (Int, Int) -> Int -> Int -> IO ()
 drawFrame cr (sx, sy) width' height' = mapM_ (uncurry cr) $ concat [top, bottom, left, right, corners]
     where
         (width, height) = (width' - 1, height' - 1)
-        top     = [(ord '=', (x, sy))        | x <- [sx..sx+width]]
-        bottom  = [(ord '=', (x, sy+height)) | x <- [sx..sx+width]]
-        left    = [(ord 'I', (sx,       y))  | y <- [sy..sy+height]]
-        right   = [(ord 'I', (sx+width, y))  | y <- [sy..sy+height]]
-        corners = [(ord '/', (sx, sy)), (ord '\\', (sx+width, sy)),
-                   (ord '\\', (sx,sy+height)), (ord '/', (sx+width,sy+height))]
+        top     = [(205, (x, sy))        | x <- [sx..sx+width]]
+        bottom  = [(205, (x, sy+height)) | x <- [sx..sx+width]]
+        left    = [(186, (sx,       y))  | y <- [sy..sy+height]]
+        right   = [(186, (sx+width, y))  | y <- [sy..sy+height]]
+        corners = [(201, (sx, sy)), (187, (sx+width, sy)),
+                   (200, (sx,sy+height)), (188, (sx+width,sy+height))]
 
 
 -- | Clears the console
