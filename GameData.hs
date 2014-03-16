@@ -383,7 +383,7 @@ worldmapTiles = stringToWorldTileMap [
 newGame :: IO Game
 newGame = return $ Game (Player "" (0,0) 0 100 100 [])
                         (Tower 0 0 0 0 0 60)
-                        (replicate 30 Zombi)
+                        (replicate 5 Zombi)
                         worldmapTiles
                         (M.fromList [((20, 20), Village "Test village" 10 False),
                                      ((33, 30), Village "Another village" 15 False),

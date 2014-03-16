@@ -7,6 +7,7 @@ import qualified Data.Set as S
 import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.State
+import Control.Applicative
 import Graphics.UI.GLFW (Key(..))
 import System.Random (randomRIO)
 
@@ -31,6 +32,12 @@ moveKeys = [([Key'H, Key'Pad4], (-1, 0)), ([Key'L, Key'Pad6], (1, 0)),
 
 consoleLoop :: Console -> ConsoleLoop -> GameState ()
 consoleLoop con f = lift (consoleIsRunning con) >>= \run -> lift (flushConsole con) >>= f run
+
+blocked :: Game -> Point -> Bool
+blocked game xy@(x, y)
+    | x < 0 || y < 0 || x >= 80 || y >= 50 = True
+    | otherwise = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
+
 
 townmap :: ConsoleLoop
 townmap False _  = return ()
@@ -79,6 +86,10 @@ townmap True con = do
         visionFilter :: Game -> Point -> Point -> Bool
         visionFilter gstate (px, py) (x, y) =
             abs (px - x) <= sightR && abs (py - y) <= sightR && lineOfSight (notTransparent gstate) (px, py) (x, y)
+
+        -- | Calculates manhattan distance
+        mDistance :: Point -> Point -> Int
+        mDistance (x, y) (x', y') = abs (x - x') - abs (y - y')
 
         drawMessageBuffer :: CharacterRenderer -> [String] -> Point -> IO ()
         drawMessageBuffer _  []     _      = return ()
@@ -135,11 +146,6 @@ townmap True con = do
         drawCorpse (_,  []) = return ()
         drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) (ord '&') xy
 
-        blocked :: Game -> Point -> Bool
-        blocked game xy@(x, y)
-            | x < 0 || y < 0 || x >= 80 || y >= 50 = True
-            | otherwise = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
-
         notTransparent :: Game -> Point -> Bool
         notTransparent game xy = fromMaybe True . fmap tileNotTransparent $ M.lookup xy (tileMap game)
 
@@ -187,11 +193,16 @@ townmap True con = do
                     targetNpc <- lift findRandomNpc
                     newPlace  <- case targetNpc of
                         Just npcPos -> return . (^+^) xy . normalize $ npcPos ^-^ xy
-                        Nothing     -> do
-                            rx <- lift (randomRIO (-1, 1) :: IO Int)
-                            ry <- lift (randomRIO (-1, 1) :: IO Int)
-                            return $ xy ^+^ (rx, ry)
+                        Nothing     -> lift followPlayer
                     moveZombi z xy newPlace =<< get
+
+                followPlayer :: IO Point
+                followPlayer
+                    | mDistance playerPos xy > 5 = let np = xy ^+^ normalize (playerPos ^-^ xy) in if blocked gstate np then randomPoint else return np
+                    | otherwise = randomPoint
+                    where
+                        playerPos = place . player $ gstate
+                        randomPoint = fmap ((^+^) xy) $ (,) <$> randomRIO (-1, 1) <*> randomRIO (-1, 1)
 
                 findRandomNpc :: IO (Maybe Point)
                 findRandomNpc = do
