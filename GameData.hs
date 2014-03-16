@@ -234,6 +234,38 @@ fireball old@Game {..} xy = do
         addCastMsg :: Game -> Game
         addCastMsg game = addMsg "You cast small ball of fire that explodes devouring everything inside blast radius." game
 
+npcAttack :: Game -> Npc -> Point -> IO Game
+npcAttack old@Game {..} n xy = do
+    luku <- randomRIO((0 + hit n)::Int, 100::Int)
+    if luku > 50 && others == []
+        then return . addDeathMsg $ old {
+            minionMap = M.delete xy minionMap
+        }
+    else if luku > 50
+        then return . addDeathMsg $ old {
+            minionMap = M.insert xy others minionMap
+        }
+    else return old
+
+    where
+        others = getOthers.M.lookup xy $ minionMap
+
+        getOthers :: Maybe [Zombi] -> [Zombi]
+        getOthers list = case list of
+            Nothing -> []
+            Just (x:y) -> y
+
+        hit :: Npc -> Int
+        hit King   = 40
+        hit Guard  = 20
+        hit Child  = 0
+        hit Male   = 15
+        hit Female = 15
+        hit _      = 10
+
+        addDeathMsg :: Game -> Game
+        addDeathMsg game = addMsg ("The " ++ show n ++ " killed the one of your minions!") game
+
 zombiAttack :: Game -> Zombi -> Point -> IO Game
 zombiAttack old@Game {..} z xy = do
     luku <- randomRIO(((zombieStr tower) + (hit z))::Int, 100::Int)
