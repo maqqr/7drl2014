@@ -300,9 +300,8 @@ mainmenu :: Bool -> Console -> IO ()
 mainmenu False _  = return ()
 mainmenu True con = do
     clearConsole
-    titleString "|----------------------------|" (23, 6)
-    titleString "| Necromancer Simulator 2014 |" (23, 7)
-    titleString "|----------------------------|" (23, 8)
+    drawFrame (colorChar (1.0, 0, 0)) (23, 6) 30 3
+    titleString " Necromancer Simulator 2014 " (24, 7)
     titleString "(S)tart New Game" (30, 14)
     titleString "(Q)uit Game" (30, 16)
     when (con `keyPressed` Key'S) $ newGame >>= runGame (advanceInput con)
