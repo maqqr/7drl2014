@@ -126,7 +126,9 @@ townmap True con = do
         drawCorpse (xy, (x:_)) = colorChar2 (0.5, 0.5, 0.5) (0.5, 0.5, 0.5) (ord '&') xy
 
         blocked :: Game -> Point -> Bool
-        blocked game xy = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
+        blocked game xy@(x, y)
+            | x < 0 || y < 0 || x >= 80 || y >= 50 = True
+            | otherwise = fromMaybe True . fmap tileBlocks $ M.lookup xy (tileMap game)
 
         notTransparent :: Game -> Point -> Bool
         notTransparent game xy = fromMaybe True . fmap tileNotTransparent $ M.lookup xy (tileMap game)
@@ -143,7 +145,7 @@ townmap True con = do
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
-        --updateMap :: GameState ()
+        updateMap :: (Game -> Point -> GameState Game) -> (Game -> M.Map Point a) -> GameState ()
         updateMap f ml = do
             gstate <- get
             g <- foldM f gstate (M.keys $ ml gstate)
@@ -160,16 +162,39 @@ townmap True con = do
         
         moveNpc :: Npc -> Point -> Point -> Game -> Game
         moveNpc npc start end gstate
-            | isNothing (M.lookup end $ npcMap gstate) = gstate { npcMap = M.insert end npc . M.delete start $ npcMap gstate }
+            | isNothing (M.lookup end $ npcMap gstate) && not (blocked gstate end) = gstate { npcMap = M.insert end npc . M.delete start $ npcMap gstate }
             | otherwise = gstate
 
         updateZombie :: Game -> Point -> GameState Game
         updateZombie gstate xy = case M.lookup xy (minionMap gstate) of
-            Just zombieList -> return gstate
+            Just zombieList -> mapM_ updateSingleZombie zombieList >> get
             Nothing         -> return gstate
+            where
+                updateSingleZombie :: Zombi -> GameState ()
+                updateSingleZombie z = do
+                    rx <- lift $ (randomRIO (-1, 1) :: IO Int)
+                    ry <- lift $ (randomRIO (-1, 1) :: IO Int)
+                    modify (moveZombi z xy (xy ^+^ (rx, ry)))
 
         moveZombi :: Zombi -> Point -> Point -> Game -> Game
-        moveZombi npc start end gstate = gstate
+        moveZombi z start end gstate
+            | False = undefined -- hit npc
+            | zombieCount (M.lookup end $ minionMap gstate) >= 5 = gstate
+            | not (blocked gstate end) = gstate { minionMap = M.alter placeZ end . M.alter removeZ start $ minionMap gstate }
+            | otherwise = gstate
+            where
+                zombieCount :: Maybe [Zombi] -> Int
+                zombieCount Nothing      = 0
+                zombieCount (Just zList) = length zList
+
+                removeZ :: Maybe [Zombi] -> Maybe [Zombi]
+                removeZ Nothing = Nothing
+                removeZ (Just (z':[])) = Nothing
+                removeZ (Just zList)   = Just $ delete z zList
+
+                placeZ :: Maybe [Zombi] -> Maybe [Zombi]
+                placeZ Nothing      = Just [z]
+                placeZ (Just zList) = Just $ z:zList
 
 
 worldmap :: ConsoleLoop
