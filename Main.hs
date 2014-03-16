@@ -136,16 +136,17 @@ townmap True con = do
             where
                 movePlayer' gstate = when (not $ blocked gstate newPos) $ do
                         modify (\g -> g { player = oldplayer { place = newPos } })
-                        updateMap
+                        updateMap updateNpc npcMap
+                        updateMap updateZombie minionMap
                     where
                         oldplayer = player gstate
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
 
-        updateMap :: GameState ()
-        updateMap = do
+        --updateMap :: GameState ()
+        updateMap f ml = do
             gstate <- get
-            g <- foldM updateNpc gstate (M.keys $ npcMap gstate)
+            g <- foldM f gstate (M.keys $ ml gstate)
             put g
 
         updateNpc :: Game -> Point -> GameState Game
@@ -161,6 +162,14 @@ townmap True con = do
         moveNpc npc start end gstate
             | isNothing (M.lookup end $ npcMap gstate) = gstate { npcMap = M.insert end npc . M.delete start $ npcMap gstate }
             | otherwise = gstate
+
+        updateZombie :: Game -> Point -> GameState Game
+        updateZombie gstate xy = case M.lookup xy (minionMap gstate) of
+            Just zombieList -> return gstate
+            Nothing         -> return gstate
+
+        moveZombi :: Zombi -> Point -> Point -> Game -> Game
+        moveZombi npc start end gstate = gstate
 
 
 worldmap :: ConsoleLoop
