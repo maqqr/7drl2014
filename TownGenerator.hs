@@ -110,7 +110,7 @@ randomVillageMap (sx, sy, w, h) size = do
     bsp <- genBsp (sx, sy, w-1, h-1)
     let emptyMap = M.fromList [((x, y), Grass) | x <- [sx..w-1], y <- [sy..h-1]]
     bspWithHouses <- generateHouses bsp
-    let tilemap = buildHouses emptyMap . ptrace . F.foldr (:) [] $ bspWithHouses
+    let tilemap = buildHouses emptyMap . F.foldr (:) [] $ bspWithHouses
     potentialNpcList <- potentialNpcs
     return (tilemap, M.fromList potentialNpcList)
     where
@@ -145,7 +145,7 @@ randomVillageMap (sx, sy, w, h) size = do
         randomPoint = (,) <$> randomRIO (0, w-1) <*> randomRIO (0, h-1)
 
         potentialNpc :: IO (Point, Npc)
-        potentialNpc = (,) <$> randomPoint <*> randomIO
+        potentialNpc = (,) <$> randomPoint <*> randomRIO (Guard, Child)
 
         potentialNpcs :: IO [(Point, Npc)]
-        potentialNpcs = replicateM (size * 500) potentialNpc
+        potentialNpcs = replicateM (size) potentialNpc

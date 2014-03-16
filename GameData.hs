@@ -4,14 +4,6 @@ module GameData where
 import qualified Data.Map as M
 import Data.Map ((\\),Map)
 import System.Random
-import Data.Maybe
-import Debug.Trace
-
-ptrace :: Show a => a -> a
-ptrace a = trace (show a) a
-
-ptrace' :: Show a => String -> a -> a
-ptrace' s a = trace ("\n" ++ s ++ ";" ++ show a) a
 
 type Point = (Int, Int)
 
@@ -117,8 +109,8 @@ data Corpse = Corpse {
 
 type CorpseMap = Map Point [Corpse]
 
-data Npc = Guard
-         | King
+data Npc = King
+         | Guard
          | MaleUnarmed | FemaleUnarmed | Male | Female
          | Child
          deriving (Eq, Bounded, Enum)
@@ -184,7 +176,7 @@ raiseUndead old@Game {..} = addCastMsg $ old {
     }
     where
         addCastMsg :: Game -> Game
-        addCastMsg game = addMsg "You cast raise undead." game
+        addCastMsg game = addMsg "You turn the nearby corpses into zombies." game
 
         distance :: Point -> Point -> Int
         distance (x,y) (xs,ys) = (x - xs)^2 + (y - ys)^2
@@ -298,7 +290,11 @@ zombiAttack old@Game {..} z xy = do
         hit _ = 0
 
         addDeathMsg :: Game -> Game
-        addDeathMsg game = addMsg ("The " ++ show z ++ " killed the " ++ show target) game
+        addDeathMsg game = addMsg ("The " ++ show z ++ " killed the " ++ targetName) game
+
+        targetName = case target of
+            Just npc -> show npc
+            Nothing -> "nothing"
 
 createVillage :: IO TileMap
 createVillage = undefined
@@ -385,19 +381,19 @@ newGame = return $ Game (Player "" (0,0) 0 100 100 [])
                         (Tower 0 0 0 0 0 60)
                         (replicate 5 Zombi)
                         worldmapTiles
-                        (M.fromList [((20, 20), Village "Test village" 10 False),
-                                     ((33, 30), Village "Another village" 15 False),
-                                     ((32,  4), Village "Mountain village of Irongate" 18 False),
-                                     ((24, 17), Village "Logging camp" 5 False),
-                                     ((19, 13), Village "Small village" 9 False),
-                                     ((42, 20), Village "Mountain town" 20 False),
-                                     ((57, 34), Village "Town by the river" 25 False),
-                                     ((74, 24), Village "Settlement in the plains" 15 False),
-                                     ((54, 10), Village "A mountain village" 10 False),
-                                     ((79, 10), Village "Border village" 15 False),
-                                     ((62, 18), Village "A village by the mountain" 15 False),
-                                     ((10, 23), Village "Small fishing village" 0 False),
-                                     ((58, 26), Village "Laketown" 30 False),
+                        (M.fromList [ --((20, 20), Village "Test village" 10 False),
+                                     --((33, 30), Village "Another village" 15 False),
+                                     ((32,  4), Village "mountain village of Irongate" 28 False),
+                                     ((24, 17), Village "a logging camp" 8 False),
+                                     ((19, 13), Village "an abandoned village" 0 False),
+                                     ((42, 20), Village "a mountain town" 40 False),
+                                     ((57, 34), Village "a town by the river" 25 False),
+                                     ((74, 24), Village "a settlement in the plains" 15 False),
+                                     ((54, 10), Village "a mountain village" 15 False),
+                                     ((79, 10), Village "a border village" 15 False),
+                                     ((62, 18), Village "a village by the mountain" 15 False),
+                                     ((10, 23), Village "a small fishing village" 10 False),
+                                     ((58, 26), Village "Laketown" 40 False),
                                      ((60, 25), Castle)]) --worldVillageMap
                         (10, 10)
                         (M.fromList [])

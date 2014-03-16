@@ -47,7 +47,7 @@ townmap True con = do
         clearConsole
         let tmap = tileMap gstate
         let playerPlace = place . player $ gstate
-        sequence_ $ foldr (\xy -> mapDrawer gstate xy $ M.lookup xy tmap) [] (tilesInSight playerPlace)
+        sequence_ $ foldr (\xy -> mapDrawer gstate xy $ M.lookup xy tmap) [] (tilesInSight playerPlace ++ zombieVision gstate)
 
         -- Draw corpses, npcs & zombies
         sequence_ $ M.foldrWithKey (\xy c iolist -> drawCorpse (xy, c):iolist) [] (corpseMap gstate)
@@ -63,9 +63,9 @@ townmap True con = do
         -- Draw key info
         let w = 30 in drawFrame whiteChar (80 - w, 50) w 10
         drawString whiteChar "r - raise undead" (52, 52)
-        drawString whiteChar "d - drain life" (52, 53)
-        drawString whiteChar "f - fireball" (52, 54)
-        drawString whiteChar "e - force bolt" (52, 55)
+        --drawString whiteChar "d - drain life" (52, 53)
+        --drawString whiteChar "f - fireball" (52, 54)
+        --drawString whiteChar "e - force bolt" (52, 55)
         drawString whiteChar "enter - leave map" (52, 57)
 
         -- Draw player health
@@ -76,12 +76,30 @@ townmap True con = do
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
 
+    -- Leave map
+    when (con `keyPressed` Key'Enter) $ leaveMap
+
     when (con `keyPressed` Key'R) $ modify raiseUndead >> advanceWorld
 
     consoleLoop con townmap
     where
         sightR = 14
         tilesInSight (px, py) = [(px+x, py+y) | x <- [-sightR..sightR], y <- [-sightR..sightR], x*x + y*y < sightR * sightR]
+
+        leaveMap :: GameState ()
+        leaveMap = do
+            gstate <- get
+            let (px, py) = place . player $ gstate
+            if px == 0 || py == 0 || px == 79 || py == 49 then do
+                modify $ \g -> g { zombieArmy = concat . M.elems $ minionMap g }
+                let population = length . M.keys $ npcMap gstate
+                modify $ \g -> g { worldVillageMap = M.update (\v -> Just $ v { villageSize = population, playerStatus = True }) (worldmapPosition g) (worldVillageMap g) }
+                consoleLoop con worldmap
+            else
+                modify (addMsg "You have to be at the map edge to leave.")
+
+        zombieVision :: Game -> [Point]
+        zombieVision gstate = concat . map (\(zx, zy) -> [(zx+x, zy+y) | x <- [-1..1], y <- [-1..1]]) . M.keys $ minionMap gstate
 
         visionFilter :: Game -> Point -> Point -> Bool
         visionFilter gstate (px, py) (x, y) =
@@ -98,7 +116,7 @@ townmap True con = do
         mapDrawer :: Game -> Point -> Maybe Tile -> [IO ()] -> [IO ()]
         mapDrawer _ _ Nothing = id
         mapDrawer gstate xy (Just t)
-            | lineOfSight (notTransparent gstate) (place . player $ gstate) xy = (:) (drawTile xy t)
+            | lineOfSight (notTransparent gstate) (place . player $ gstate) xy || xy `elem` zombieVision gstate = (:) (drawTile xy t)
             | otherwise = id
 
         tileToChar :: Tile -> CharInfo
@@ -127,12 +145,10 @@ townmap True con = do
                 npcData King  = (2, (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
                 npcData _     = (1, (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
 
-        -- riittäisikö tässä vain päällimmäisen zombin piirto?
         drawZombie :: (Point, [Zombi]) -> IO ()
         drawZombie (_,  []) = return ()
-        drawZombie (xy, (z:zs)) = do
+        drawZombie (xy, (z:_)) = do
                 colorChar2 col1 col2 ascii xy
-                drawZombie (xy, zs)
             where
                 (ascii, col1, col2) = zombiData z
 
@@ -209,7 +225,7 @@ townmap True con = do
                     let nearNpcs = M.keys $ M.filterWithKey (\k _ -> visionFilter gstate xy k) (npcMap gstate)
                     ind <- randomRIO (0, length nearNpcs - 1)
                     case nearNpcs of
-                        list@(x:xs) -> return . Just $ list !! ind
+                        list@(_:_) -> return . Just $ list !! ind
                         _           -> return Nothing
 
         moveZombi :: Zombi -> Point -> Point -> Game -> GameState ()
@@ -239,7 +255,6 @@ worldmap True con = do
     gstate <- get
     lift $ do
         clearConsole
-        print $ worldmapPosition gstate
 
         -- Draw map and villages
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy (worldmapTileToChar tile):iolist) [] (worldTileMap gstate)
@@ -248,8 +263,17 @@ worldmap True con = do
         -- Draw player
         colorChar (0.8, 0.3, 0.5) (ord '@') (worldmapPosition gstate)
 
+        -- Show place name
+        case M.lookup (worldmapPosition gstate) (worldVillageMap gstate) of
+            Just Castle -> drawString whiteChar "Here is the king's castle. You can't find the enterance to it." (5, 44)
+            Just village -> drawString whiteChar ("Here is " ++ villageName village ++ ". Population: " ++ show (villageSize village)) (5, 44)
+            _ -> case M.lookup (worldmapPosition gstate) (worldTileMap gstate) of
+                Just TowerTile -> drawString whiteChar "Here is your own necromancer tower." (5, 44)
+                _ -> return ()
+
         -- Draw tower info
         drawFrame whiteChar (0, 40) 80 20
+        {-
         drawStringCentered whiteChar "INFORMATION ABOUT YOUR NECROMANCER TOWER" (40, 40)
         drawInfo (5, 44) gstate (zombieStr.tower) "Zombie strength: "
         drawInfo (5, 46) gstate (zombieCon.tower) "Zombie ???: "
@@ -258,6 +282,7 @@ worldmap True con = do
         drawInfo (40, 44) gstate (playerHp.tower) "Player max HP: "
         drawInfo (40, 46) gstate (spellDmg.tower) "Spell damage: "
         drawInfo (40, 48) gstate (playerHp.tower) "Spells up (?): "
+        -}
 
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
@@ -277,12 +302,14 @@ worldmap True con = do
             gstate <- get
             let targetVillage = M.lookup (worldmapPosition gstate) (worldVillageMap gstate)
             case targetVillage of
+                Just Castle -> modify $ addMsg "You can't find an enterance to the castle."
                 Just village -> do
                     let oldplayer = player gstate
                     let playerPosOnTown = (0, 0) -- todo: make random?
                     (rndVillage, npcs) <- lift $ randomVillageMap (0, 0, 80, 50) (villageSize village)
                     modify (\g -> g { tileMap = rndVillage,
                                       npcMap = npcs,
+                                      corpseMap = M.fromList [],
                                       minionMap = M.fromList [(playerPosOnTown, zombieArmy gstate)],
                                       player = oldplayer { place = playerPosOnTown },
                                       messageBuffer = ["You entered " ++ villageName village ++ "."] })
@@ -361,10 +388,11 @@ mainmenu :: Bool -> Console -> IO ()
 mainmenu False _  = return ()
 mainmenu True con = do
     clearConsole
-    drawFrame (colorChar (1.0, 0, 0)) (23, 6) 30 3
+    drawFrame (colorChar (1.0, 0, 0)) (22, 4) 32 7
     titleString " Necromancer Simulator 2014 " (24, 7)
-    titleString "(S)tart New Game" (30, 14)
-    titleString "(Q)uit Game" (30, 16)
+    titleString "(S)tart New Game" (30, 18)
+    titleString "(Q)uit Game" (30, 22)
+    titleString "Made by Team Kalamakkara" (2, 58)
     when (con `keyPressed` Key'S) $ newGame >>= runGame (advanceInput con)
     unless (con `keyPressed` Key'Q) $ consoleIsRunning con >>= \run -> flushConsole con >>= mainmenu run
     where

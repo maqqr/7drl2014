@@ -17,10 +17,10 @@ bres run rise
     | rise > run = [(x,  y) | (y, x) <- bres rise run   ]
     | otherwise  = zip [0..run] . map fst $ iterate step (0, run `div` 2)
     where
-        step (y, error)
+        step (y, err)
             | error' < 0 = (y + 1, error' + run)
             | otherwise  = (y,     error')
-            where error' = error - rise
+            where error' = err - rise
 
 line :: Point -> Point -> [Point]
 line (x1, y1) (x2, y2) = [(x1+x, y1+y) | (x, y) <- bres (x2-x1) (y2-y1)]
@@ -39,21 +39,3 @@ lineOfSight isBlocked start end = checkLine . drop 1 $ line start end
         checkLine (p:oints)
             | isBlocked p = False
             | otherwise = checkLine oints
-
-
--- | Monadic version of lineOfSight
-lineOfSightM :: forall m . Monad m => (Point -> m Bool)
-             -> Point
-             -> Point
-             -> m Bool
-lineOfSightM isBlocked start end = checkLine . drop 1 $ line start end
-    where
-        checkLine :: [Point] -> m Bool
-        checkLine [] = return True
-        checkLine (_:[]) = return True
-        checkLine (p:oints) = do
-            block <- isBlocked p
-            if block then
-                return False
-                else
-                    checkLine oints
