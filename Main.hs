@@ -174,14 +174,14 @@ townmap True con = do
                 updateSingleZombie z = do
                     rx <- lift $ (randomRIO (-1, 1) :: IO Int)
                     ry <- lift $ (randomRIO (-1, 1) :: IO Int)
-                    modify (moveZombi z xy (xy ^+^ (rx, ry)))
+                    moveZombi z xy (xy ^+^ (rx, ry)) =<< get
 
-        moveZombi :: Zombi -> Point -> Point -> Game -> Game
+        moveZombi :: Zombi -> Point -> Point -> Game -> GameState ()
         moveZombi z start end gstate
-            | False = undefined -- hit npc
-            | zombieCount (M.lookup end $ minionMap gstate) >= 5 = gstate
-            | not (blocked gstate end) = gstate { minionMap = M.alter placeZ end . M.alter removeZ start $ minionMap gstate }
-            | otherwise = gstate
+            | isJust (M.lookup end $ npcMap gstate) = lift (zombiAttack gstate z end) >>= put
+            | zombieCount (M.lookup end $ minionMap gstate) >= 5 = return ()
+            | not (blocked gstate end) = put $ gstate { minionMap = M.alter placeZ end . M.alter removeZ start $ minionMap gstate }
+            | otherwise = return ()
             where
                 zombieCount :: Maybe [Zombi] -> Int
                 zombieCount Nothing      = 0
@@ -189,7 +189,7 @@ townmap True con = do
 
                 removeZ :: Maybe [Zombi] -> Maybe [Zombi]
                 removeZ Nothing = Nothing
-                removeZ (Just (z':[])) = Nothing
+                removeZ (Just (_:[])) = Nothing
                 removeZ (Just zList)   = Just $ delete z zList
 
                 placeZ :: Maybe [Zombi] -> Maybe [Zombi]

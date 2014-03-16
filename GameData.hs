@@ -154,7 +154,7 @@ addMsg str game
     | otherwise                   = game { messageBuffer = str : buf }
     where
         buf = messageBuffer game
-        maxBufferSize = 5
+        maxBufferSize = 8
 
 aoe :: Point -> Int -> [Point]
 aoe (x',y') r = [(x'+x, y'+y) | x <- [-r..r], y <- [-r..r], x^2+y^2<=r^2] 
