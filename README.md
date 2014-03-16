@@ -7,6 +7,8 @@ The development started on 9.3.2014 at 12:00 UTC+2.
 
 The development ends on 16.3.2014 at 12:00 UTC+2.
 
+Status: FAILED
+
 ## Development log
 
 ### Day 1
@@ -43,4 +45,5 @@ The town generator generates npcs to the town map. The game is currently unplaya
 
 ### Day 7
 
-Coming soon (:tm:).
+We tried to quickly finish the game but didn't have enough time.
+
