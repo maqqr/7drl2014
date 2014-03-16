@@ -343,7 +343,17 @@ newGame = return $ Game (Player "" (0,0) 0 100 100 [])
                         worldmapTiles
                         (M.fromList [((20, 20), Village "Test village" 10 False),
                                      ((33, 30), Village "Another village" 15 False),
-                                     --((), Village "" 0 False),
+                                     ((32,  4), Village "Mountain village of Irongate" 18 False),
+                                     ((24, 17), Village "Logging camp" 5 False),
+                                     ((19, 13), Village "Small village" 9 False),
+                                     ((42, 20), Village "Mountain town" 20 False),
+                                     ((57, 34), Village "Town by the river" 25 False),
+                                     ((74, 24), Village "Settlement in the plains" 15 False),
+                                     ((54, 10), Village "A mountain village" 10 False),
+                                     ((79, 10), Village "Border village" 15 False),
+                                     ((62, 18), Village "A village by the mountain" 15 False),
+                                     ((10, 23), Village "Small fishing village" 0 False),
+                                     ((58, 26), Village "Laketown" 30 False),
                                      ((60, 25), Castle)]) --worldVillageMap
                         (10, 10)
                         (M.fromList [])
