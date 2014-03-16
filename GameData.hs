@@ -43,8 +43,20 @@ tileNotTransparent Gate      = True
 tileNotTransparent DoorClose = True
 tileNotTransparent _         = False
 
+sign :: Int -> Int
+sign x
+    | x < 0 = -1
+    | x > 0 =  1
+    | otherwise = 0
+
 (^+^) :: Point -> Point -> Point
 (x, y) ^+^ (x', y') = (x + x', y + y')
+
+(^-^) :: Point -> Point -> Point
+(x, y) ^-^ (x', y') = (x - x', y - y')
+
+normalize :: Point -> Point
+normalize (x, y) = (sign x, sign y)
 
 type TileMap = Map Point Tile
 

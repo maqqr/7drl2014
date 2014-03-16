@@ -53,13 +53,23 @@ townmap True con = do
         drawFrame whiteChar (0, 50) 80 10
         drawMessageBuffer whiteChar (messageBuffer gstate) (2, 51)
 
+        -- Draw key info
+        let w = 30 in drawFrame whiteChar (80 - w, 50) w 10
+        drawString whiteChar "r - raise undead" (52, 52)
+        drawString whiteChar "d - drain life" (52, 53)
+        drawString whiteChar "f - fireball" (52, 54)
+        drawString whiteChar "e - force bolt" (52, 55)
+        drawString whiteChar "enter - leave map" (52, 57)
+
         -- Draw player health
         let hp' = hp . player $ gstate
         let maxHp' = maxHp . player $ gstate
-        drawStringCentered whiteChar ("Hit points: " ++ show hp' ++ " / " ++ show maxHp') (40, 50)
+        drawString whiteChar ("Hit points: " ++ show hp' ++ " / " ++ show maxHp') (53, 50)
 
     -- Move player
     mapM_ (\(ks, delta) -> when (con `keysPressed` ks) (movePlayer delta)) moveKeys
+
+    when (con `keyPressed` Key'R) $ modify raiseUndead >> advanceWorld
 
     consoleLoop con townmap
     where
@@ -101,10 +111,10 @@ townmap True con = do
                           in colorChar2 col1 col2 ascii xy 
             where
                 npcData :: Npc -> CharInfo
-                npcData Guard = (ord '@', (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
-                npcData Child = (ord '@', (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
-                npcData King  = (ord '@', (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
-                npcData _     = (ord '@', (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
+                npcData Guard = (2, (0.7, 0.7, 0.7), (0.2, 0.2, 0.7))
+                npcData Child = (1, (0.7, 0.7, 0.7), (0.1, 0.1, 0.9))
+                npcData King  = (2, (0.7, 0.7, 0.5), (0.7, 0.7, 0.5))
+                npcData _     = (1, (0.6, 0.6, 0.6), (0.8, 0.8, 0.8))
 
         -- riittäisikö tässä vain päällimmäisen zombin piirto?
         drawZombie :: (Point, [Zombi]) -> IO ()
@@ -138,12 +148,14 @@ townmap True con = do
             where
                 movePlayer' gstate = when (not $ blocked gstate newPos) $ do
                         modify (\g -> g { player = oldplayer { place = newPos } })
-                        updateMap updateNpc npcMap
-                        updateMap updateZombie minionMap
+                        advanceWorld
                     where
                         oldplayer = player gstate
                         oldxy     = place oldplayer
                         newPos    = oldxy ^+^ delta
+
+        advanceWorld :: GameState ()
+        advanceWorld = updateMap updateNpc npcMap >> updateMap updateZombie minionMap
 
         updateMap :: (Game -> Point -> GameState Game) -> (Game -> M.Map Point a) -> GameState ()
         updateMap f ml = do
@@ -172,9 +184,22 @@ townmap True con = do
             where
                 updateSingleZombie :: Zombi -> GameState ()
                 updateSingleZombie z = do
-                    rx <- lift $ (randomRIO (-1, 1) :: IO Int)
-                    ry <- lift $ (randomRIO (-1, 1) :: IO Int)
-                    moveZombi z xy (xy ^+^ (rx, ry)) =<< get
+                    targetNpc <- lift findRandomNpc
+                    newPlace  <- case targetNpc of
+                        Just npcPos -> return . (^+^) xy . normalize $ npcPos ^-^ xy
+                        Nothing     -> do
+                            rx <- lift (randomRIO (-1, 1) :: IO Int)
+                            ry <- lift (randomRIO (-1, 1) :: IO Int)
+                            return $ xy ^+^ (rx, ry)
+                    moveZombi z xy newPlace =<< get
+
+                findRandomNpc :: IO (Maybe Point)
+                findRandomNpc = do
+                    let nearNpcs = M.keys $ M.filterWithKey (\k _ -> visionFilter gstate xy k) (npcMap gstate)
+                    ind <- randomRIO (0, length nearNpcs - 1)
+                    case nearNpcs of
+                        list@(x:xs) -> return . Just $ list !! ind
+                        _           -> return Nothing
 
         moveZombi :: Zombi -> Point -> Point -> Game -> GameState ()
         moveZombi z start end gstate
