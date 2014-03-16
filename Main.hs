@@ -139,13 +139,13 @@ townmap True con = do
         updateAI :: GameState ()
         updateAI = return () -- fold?
 
-
 worldmap :: ConsoleLoop
 worldmap False _  = return ()
 worldmap True con = do
     gstate <- get
     lift $ do
         clearConsole
+        print $ worldmapPosition gstate
 
         -- Draw map and villages
         sequence_ $ M.foldrWithKey (\xy tile iolist -> drawTile xy (worldmapTileToChar tile):iolist) [] (worldTileMap gstate)
