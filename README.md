@@ -7,7 +7,9 @@ The development started on 9.3.2014 at 12:00 UTC+2.
 
 The development ended on 16.3.2014 at 12:00 UTC+2.
 
-Status: FAILED
+Status: __FAILED__
+
+You can download and try the game in its current state here: [Releases](https://github.com/maqqr/7drl2014/releases)
 
 ## Development log
 
