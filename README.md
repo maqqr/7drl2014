@@ -5,7 +5,11 @@ Necromancer Simulator 2014 is a roguelike made in 7 days using Haskell for the 7
 
 The development started on 9.3.2014 at 12:00 UTC+2.
 
-The development ends on 16.3.2014 at 12:00 UTC+2.
+The development ended on 16.3.2014 at 12:00 UTC+2.
+
+Status: __FAILED__
+
+You can download and try the game in its current state here: [Releases](https://github.com/maqqr/7drl2014/releases)
 
 ## Development log
 
@@ -43,4 +47,10 @@ The town generator generates npcs to the town map. The game is currently unplaya
 
 ### Day 7
 
-Coming soon (:tm:).
+We tried to quickly finish the game but didn't have enough time. We made a better world map, added ability to raise undead when you are in a village (r-key raises undead). We had drain life, fireball and force bolt spells, but didn't have time to make a targeting system, so the player can't actually cast them. The biggest problems right now are that the player can't cast spells, the player can't die, and on the world map, the player can't enter the king's castle, because it isn't finished. We made the castle's layout, but it doesn't have any npcs.
+
+There is a screenshot of a test village with hundreds of villagers. The gray &'s are corpses, which you can sense through walls. You can see where all of your zombies are, and you can see one tile around them.
+![Day 7](/screenshots/day7.png "Screenshot of day 7")
+
+And here is a screenshot of the improved world map:
+![Day 7](/screenshots/day7b.png "Screenshot of day 7")
